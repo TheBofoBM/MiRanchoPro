@@ -1,19 +1,19 @@
-package com.example.miranchopro
+package com.equipo.miranchopro
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.miranchopro.ui.AppNavigation
-import com.example.miranchopro.ui.theme.MiRanchoProTheme
+import com.equipo.miranchopro.ui.navegacion.NavegacionApp
+import com.equipo.miranchopro.ui.tema.TemaMiRanchoPro
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MiRanchoProTheme {
-                AppNavigation()
+            TemaMiRanchoPro {
+                NavegacionApp()
             }
         }
     }

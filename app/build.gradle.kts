@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.miranchopro"
+    namespace = "com.equipo.miranchopro"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.miranchopro"
+        applicationId = "com.equipo.miranchopro"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -41,6 +41,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
