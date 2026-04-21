@@ -4,8 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.equipo.miranchopro.ui.navegacion.NavegacionApp
-import com.equipo.miranchopro.ui.tema.TemaMiRanchoPro
+import com.equipo.miranchopro.interfaz.navegacion.NavegacionApp
+import com.equipo.miranchopro.interfaz.tema.TemaMiRanchoPro
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
