@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class EditarAnimalViewModel(
-    private val repositorio: AnimalRepository = AnimalRepository()
+    private val repositorio: AnimalRepository
 ) : ViewModel() {
 
     var idArete by mutableStateOf("")

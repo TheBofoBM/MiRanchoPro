@@ -2,6 +2,8 @@ package com.equipo.miranchopro.interfaz.pantallas.inventario
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,12 +21,14 @@ fun PantallaRegistrarAnimal(
     alFinalizar: () -> Unit = {}
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    var expanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.eventoUI.collectLatest { evento ->
             when (evento) {
                 is RegistrarAnimalViewModel.EventoUI.Exito -> {
-                    snackbarHostState.showSnackbar("Animal registrado con éxito")
+                    snackbarHostState.showSnackbar(evento.mensaje)
+                    // Opcional: Podrías navegar atrás después de un tiempo
                 }
                 is RegistrarAnimalViewModel.EventoUI.Error -> {
                     snackbarHostState.showSnackbar(evento.mensaje)
@@ -46,6 +50,37 @@ fun PantallaRegistrarAnimal(
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Selector de Categoría (Tipo)
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = viewModel.tipo,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Categoría (Tipo)") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    viewModel.tiposDisponibles.forEach { seleccion ->
+                        DropdownMenuItem(
+                            text = { Text(seleccion) },
+                            onClick = {
+                                viewModel.tipo = seleccion
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
             OutlinedTextField(
                 value = viewModel.idArete,
                 onValueChange = { viewModel.idArete = it },

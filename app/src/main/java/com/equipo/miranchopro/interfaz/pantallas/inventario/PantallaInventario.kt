@@ -1,6 +1,8 @@
 package com.equipo.miranchopro.interfaz.pantallas.inventario
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,15 +14,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.modelovista.InventarioViewModel
+import com.equipo.miranchopro.modelovista.VistaInventario
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +30,29 @@ fun PantallaInventario(
     alSeleccionarAnimal: (String) -> Unit = {},
     alAgregarAnimal: () -> Unit = {}
 ) {
+    // Manejar el botón atrás físico para volver a categorías
+    BackHandler(enabled = viewModel.vistaActual == VistaInventario.DETALLE_CATEGORIA) {
+        viewModel.volverACategorias()
+    }
+
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        if (viewModel.vistaActual == VistaInventario.CATEGORIAS) "Inventario Ganadero" 
+                        else "Categoría: ${viewModel.categoriaSeleccionada}"
+                    ) 
+                },
+                navigationIcon = {
+                    if (viewModel.vistaActual == VistaInventario.DETALLE_CATEGORIA) {
+                        IconButton(onClick = { viewModel.volverACategorias() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        }
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = alAgregarAnimal,
@@ -47,54 +70,101 @@ fun PantallaInventario(
                 .fillMaxSize()
                 .background(Color(0xFFF8F9FA))
         ) {
-            // Cabecera
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Gestión de Ganado",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "${viewModel.listaAnimales.size} animales registrados",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Barra de búsqueda
-                OutlinedTextField(
-                    value = viewModel.busqueda,
-                    onValueChange = { viewModel.busqueda = it },
-                    placeholder = { Text("Buscar por tag, raza o tipo...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        unfocusedBorderColor = Color(0xFFE0E0E0)
-                    )
-                )
-            }
-
-            if (viewModel.estaCargando) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (viewModel.animalesFiltrados.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay animales registrados", color = Color.Gray)
-                }
+            if (viewModel.vistaActual == VistaInventario.CATEGORIAS) {
+                SeccionCategorias(viewModel)
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(viewModel.animalesFiltrados) { animal ->
-                        TarjetaAnimal(animal, onClick = { alSeleccionarAnimal(animal.idArete) })
+                SeccionDetalleCategoria(viewModel, alSeleccionarAnimal)
+            }
+        }
+    }
+}
+
+@Composable
+fun SeccionCategorias(viewModel: InventarioViewModel) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = "Seleccione una categoría",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.Gray
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        if (viewModel.estaCargando) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (viewModel.categorias.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No hay animales registrados aún", color = Color.Gray)
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(viewModel.categorias) { (nombre, cantidad) ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.seleccionarCategoria(nombre) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(20.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(text = nombre, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text(text = "$cantidad animales", color = Color.Gray, fontSize = 14.sp)
+                            }
+                            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.LightGray)
+                        }
                     }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SeccionDetalleCategoria(
+    viewModel: InventarioViewModel,
+    alSeleccionarAnimal: (String) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Barra de búsqueda dentro de la categoría
+        OutlinedTextField(
+            value = viewModel.busqueda,
+            onValueChange = { viewModel.busqueda = it },
+            placeholder = { Text("Buscar por tag o raza...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                unfocusedBorderColor = Color(0xFFE0E0E0)
+            )
+        )
+
+        if (viewModel.animalesFiltrados.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No se encontraron animales", color = Color.Gray)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(viewModel.animalesFiltrados) { animal ->
+                    TarjetaAnimal(animal, onClick = { alSeleccionarAnimal(animal.idArete) })
                 }
             }
         }
@@ -134,7 +204,7 @@ fun TarjetaAnimal(animal: Animal, onClick: () -> Unit) {
                 modifier = Modifier.padding(vertical = 4.dp)
             )
             
-            Divider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFF0F0F0))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFF0F0F0))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
