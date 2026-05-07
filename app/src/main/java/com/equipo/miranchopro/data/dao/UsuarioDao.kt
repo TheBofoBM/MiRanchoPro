@@ -1,19 +1,3 @@
-package com.equipo.miranchopro.data.local.dao
-
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import com.equipo.miranchopro.data.model.Usuario
-
-@Dao
-interface UsuarioDao {
-    @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun registrarUsuario(usuario: Usuario)
-
-    @Query("SELECT * FROM usuarios WHERE correo = :correo AND contrasena = :contrasena")
-    suspend fun iniciarSesion(correo: String, contrasena: String): Usuario?
-
-    @Query("SELECT * FROM usuarios WHERE correo = :correo")
-    suspend fun buscarPorCorreo(correo: String): Usuario?
-}
+// This file is a duplicate and should be deleted.
+// The actual UsuarioDao is located in com.equipo.miranchopro.data.local.dao package
+// at the path: app/src/main/java/com/equipo/miranchopro/data/local/dao/UsuarioDao.kt
