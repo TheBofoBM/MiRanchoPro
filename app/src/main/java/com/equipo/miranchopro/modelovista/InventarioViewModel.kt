@@ -11,7 +11,8 @@ import kotlinx.coroutines.launch
 
 enum class VistaInventario {
     CATEGORIAS,
-    DETALLE_CATEGORIA
+    DETALLE_CATEGORIA,
+    DADOS_DE_BAJA
 }
 
 class InventarioViewModel(
@@ -22,7 +23,6 @@ class InventarioViewModel(
         private set
 
     var busqueda by mutableStateOf("")
-    
     var estaCargando by mutableStateOf(false)
         private set
 
@@ -43,17 +43,26 @@ class InventarioViewModel(
         }
     }
 
+    // Solo categorías de animales que NO están de baja
     val categorias: List<Pair<String, Int>>
-        get() = listaAnimales.groupBy { it.tipo }
+        get() = listaAnimales
+            .filter { it.estado != "Baja" }
+            .groupBy { it.tipo }
             .map { it.key to it.value.size }
             .sortedBy { it.first }
 
+    // Lista de animales que SI están de baja
+    val animalesDeBaja: List<Animal>
+        get() = listaAnimales.filter { it.estado == "Baja" }
+
     val animalesFiltrados: List<Animal>
         get() {
-            val base = if (categoriaSeleccionada != null) {
-                listaAnimales.filter { it.tipo == categoriaSeleccionada }
+            val base = if (vistaActual == VistaInventario.DADOS_DE_BAJA) {
+                animalesDeBaja
+            } else if (categoriaSeleccionada != null) {
+                listaAnimales.filter { it.tipo == categoriaSeleccionada && it.estado != "Baja" }
             } else {
-                listaAnimales
+                listaAnimales.filter { it.estado != "Baja" }
             }
             
             return if (busqueda.isBlank()) {
@@ -69,6 +78,11 @@ class InventarioViewModel(
     fun seleccionarCategoria(categoria: String) {
         categoriaSeleccionada = categoria
         vistaActual = VistaInventario.DETALLE_CATEGORIA
+    }
+
+    fun verBajas() {
+        vistaActual = VistaInventario.DADOS_DE_BAJA
+        categoriaSeleccionada = null
     }
 
     fun volverACategorias() {
