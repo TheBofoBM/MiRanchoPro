@@ -23,6 +23,12 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.equipo.miranchopro.data.local.RanchoDatabase
 import com.equipo.miranchopro.data.repository.AnimalRepository
+
+// Nuevos imports para Lotes
+import com.equipo.miranchopro.data.repository.LoteRepository
+import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaLotes
+import com.equipo.miranchopro.viewmodel.LotesViewModel
+
 import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaEditarAnimal
 import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaInventario
 import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaRegistrarAnimal
@@ -45,14 +51,18 @@ sealed class Pantalla(val ruta: String) {
     object Inicio : Pantalla("inicio")
     object Salud : Pantalla("salud")
     object Lotes : Pantalla("lotes")
+
+    // --- NUEVO: Rutas para las funciones de lotes ---
+    object RegistrarLote : Pantalla("registrar_lote")
+
     object Tareas : Pantalla("tareas")
     object Reportes : Pantalla("reportes")
 }
 
 sealed class ItemNavegacion(
-    val ruta: String, 
-    val titulo: String, 
-    val iconoNormal: ImageVector, 
+    val ruta: String,
+    val titulo: String,
+    val iconoNormal: ImageVector,
     val iconoSeleccionado: ImageVector
 ) {
     object Inicio : ItemNavegacion(Pantalla.Inicio.ruta, "Inicio", Icons.Outlined.Home, Icons.Filled.Home)
@@ -68,7 +78,10 @@ fun NavegacionApp() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val database = RanchoDatabase.getDatabase(context)
+
     val repoAnimales = AnimalRepository(database.animalDao())
+    // --- NUEVO: Instanciamos el repositorio de Lotes ---
+    val repoLotes = LoteRepository(database.loteDao())
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -82,7 +95,7 @@ fun NavegacionApp() {
             if (mostrarBarra) {
                 NavigationBar(
                     containerColor = Color.White,
-                    tonalElevation = 0.dp, // Diseño plano y limpio
+                    tonalElevation = 0.dp,
                     modifier = Modifier
                 ) {
                     val items = listOf(
@@ -94,16 +107,17 @@ fun NavegacionApp() {
                         ItemNavegacion.Reportes
                     )
                     items.forEach { item ->
-                        // Lógica para mantener seleccionado el icono correcto
+                        // Ampliamos la lógica para mantener seleccionado Lotes si estás dentro de sus sub-pantallas
                         val esSeleccionado = currentDestination?.hierarchy?.any { it.route == item.ruta } == true ||
-                                (item == ItemNavegacion.Ganado && (currentDestination?.route == Pantalla.RegistrarAnimal.ruta || currentDestination?.route?.startsWith("editar_animal") == true))
-                        
+                                (item == ItemNavegacion.Ganado && (currentDestination?.route == Pantalla.RegistrarAnimal.ruta || currentDestination?.route?.startsWith("editar_animal") == true)) ||
+                                (item == ItemNavegacion.Lotes && (currentDestination?.route == Pantalla.RegistrarLote.ruta))
+
                         NavigationBarItem(
-                            icon = { 
+                            icon = {
                                 Icon(
-                                    imageVector = if (esSeleccionado) item.iconoSeleccionado else item.iconoNormal, 
-                                    contentDescription = item.titulo 
-                                ) 
+                                    imageVector = if (esSeleccionado) item.iconoSeleccionado else item.iconoNormal,
+                                    contentDescription = item.titulo
+                                )
                             },
                             label = { Text(item.titulo, fontSize = 10.sp) },
                             selected = esSeleccionado,
@@ -119,7 +133,7 @@ fun NavegacionApp() {
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Color(0xFF008577),
                                 selectedTextColor = Color(0xFF008577),
-                                indicatorColor = Color(0xFFE0F2F1), // Fondo suave para el icono seleccionado
+                                indicatorColor = Color(0xFFE0F2F1),
                                 unselectedIconColor = Color.Gray,
                                 unselectedTextColor = Color.Gray
                             )
@@ -140,7 +154,7 @@ fun NavegacionApp() {
                 LoginScreen(
                     viewModel = loginViewModel,
                     onLoginExitoso = {
-                        navController.navigate(Pantalla.Inventario.ruta) {
+                        navController.navigate(Pantalla.Inicio.ruta) {
                             popUpTo(Pantalla.Login.ruta) { inclusive = true }
                         }
                     },
@@ -152,22 +166,21 @@ fun NavegacionApp() {
                 RegistroScreen(
                     viewModel = registroViewModel,
                     onRegistroExitoso = {
-                        navController.navigate(Pantalla.Inventario.ruta) {
+                        navController.navigate(Pantalla.Inicio.ruta) {
                             popUpTo(Pantalla.Login.ruta) { inclusive = true }
                         }
                     },
                     onIrALogin = { navController.popBackStack() }
                 )
             }
-            
+
             // PRINCIPALES
             composable(Pantalla.Inicio.ruta) { PantallaEnConstruccion("Inicio") }
             composable(Pantalla.Salud.ruta) { PantallaEnConstruccion("Médico") }
-            composable(Pantalla.Lotes.ruta) { PantallaEnConstruccion("Lotes") }
             composable(Pantalla.Tareas.ruta) { PantallaEnConstruccion("Tareas") }
             composable(Pantalla.Reportes.ruta) { PantallaEnConstruccion("Reportes") }
 
-            // INVENTARIO (Tu parte)
+            // INVENTARIO
             composable(Pantalla.Inventario.ruta) {
                 val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
                 PantallaInventario(
@@ -187,6 +200,24 @@ fun NavegacionApp() {
                 val idArete = entrada.arguments?.getString("idArete") ?: ""
                 val editViewModel: EditarAnimalViewModel = viewModel { EditarAnimalViewModel(repoAnimales) }
                 PantallaEditarAnimal(idArete = idArete, viewModel = editViewModel, alVolver = { navController.popBackStack() })
+            }
+
+            // --- NUEVO: MÓDULO DE LOTES ---
+            composable(Pantalla.Lotes.ruta) {
+                val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
+                PantallaLotes(
+                    viewModel = lotesViewModel,
+                    onAgregarLote = {
+                        navController.navigate(Pantalla.RegistrarLote.ruta)
+                    },
+                    onVerDetalle = { idLote ->
+                        // Aquí navegaremos al detalle después (CU-14 / CU-16)
+                    }
+                )
+            }
+
+            composable(Pantalla.RegistrarLote.ruta) {
+                PantallaEnConstruccion("Registrar Lote (Próximamente)")
             }
         }
     }
