@@ -35,4 +35,34 @@ class LotesViewModel(private val repository: LoteRepository) : ViewModel() {
     fun validarTraslado(loteDestino: Lote, cantidadAMover: Int): Boolean {
         return (loteDestino.ocupacionActual + cantidadAMover) <= loteDestino.capacidadMaxima
     }
+
+    fun guardarNuevoLote(lote: Lote) {
+        viewModelScope.launch {
+            repository.insertarLote(lote)
+        }
+    }
+
+    // CU-14: Mover ganado de un lote a otro
+    fun moverGanado(loteOrigen: Lote, loteDestino: Lote) {
+        viewModelScope.launch {
+            val cantidadAMover = loteOrigen.ocupacionActual
+
+            // Actualizamos la capacidad de ambos lotes
+            val loteOrigenActualizado = loteOrigen.copy(ocupacionActual = 0)
+            val loteDestinoActualizado = loteDestino.copy(ocupacionActual = loteDestino.ocupacionActual + cantidadAMover)
+
+            repository.actualizarLote(loteOrigenActualizado)
+            repository.actualizarLote(loteDestinoActualizado)
+
+            // NOTA: Aquí también deberías llamar a tu AnimalRepository para actualizar
+            // el 'idLote' de los animales correspondientes para que se refleje en la base de datos.
+        }
+    }
+
+    // Editar lote
+    fun actualizarLote(lote: Lote) {
+        viewModelScope.launch {
+            repository.actualizarLote(lote)
+        }
+    }
 }
