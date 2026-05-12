@@ -16,13 +16,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.equipo.miranchopro.data.model.Tarea
+import com.equipo.miranchopro.interfaz.navegacion.Rutas
 import com.equipo.miranchopro.modelovista.TareasViewModel
 import com.example.miranchopro.ui.componentes.DialogoAsignarTarea
 import com.example.miranchopro.ui.componentes.TarjetaTarea
 
 @Composable
 fun PantallaTareas(
+    navController: NavController,
     tareasViewModel: TareasViewModel = viewModel()
 ) {
     val listaTareas = tareasViewModel.listaTareas
@@ -60,7 +63,7 @@ fun PantallaTareas(
                 shape = CircleShape
             ) { Icon(Icons.Default.Add, contentDescription = "Añadir") }
         },
-        bottomBar = { BarraNavegacion() }
+        bottomBar = { BarraNavegacion(navController) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -141,13 +144,27 @@ fun CajaResumen(numero: String, etiqueta: String, modifier: Modifier, colorNumer
 }
 
 @Composable
-fun BarraNavegacion() {
+fun BarraNavegacion(navController: NavController) {
     NavigationBar(containerColor = Color.White) {
         NavigationBarItem(selected = false, onClick = {}, icon = { Icon(Icons.Default.Home, "Inicio") }, label = { Text("Inicio") })
         NavigationBarItem(selected = false, onClick = {}, icon = { Icon(Icons.Default.Pets, "Ganado") }, label = { Text("Ganado") })
-        NavigationBarItem(selected = false, onClick = {}, icon = { Icon(Icons.Default.FavoriteBorder, "Médico") }, label = { Text("Médico") })
+        NavigationBarItem(
+            selected = false, 
+            onClick = { navController.navigate(Rutas.Inventario.ruta) }, 
+            icon = { Icon(Icons.Default.FavoriteBorder, "Médico") }, 
+            label = { Text("Médico") }
+        )
         NavigationBarItem(selected = false, onClick = {}, icon = { Icon(Icons.Default.GridView, "Lotes") }, label = { Text("Lotes") })
-        NavigationBarItem(selected = true, onClick = {}, icon = { Icon(Icons.Outlined.PeopleOutline, "Tareas") }, label = { Text("Tareas") },
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFF00897B), selectedTextColor = Color(0xFF00897B), indicatorColor = Color(0xFFE0F2F1)))
+        NavigationBarItem(
+            selected = true, 
+            onClick = { navController.navigate(Rutas.Tareas.ruta) }, 
+            icon = { Icon(Icons.Outlined.PeopleOutline, "Tareas") }, 
+            label = { Text("Tareas") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color(0xFF00897B), 
+                selectedTextColor = Color(0xFF00897B), 
+                indicatorColor = Color(0xFFE0F2F1)
+            )
+        )
     }
 }
