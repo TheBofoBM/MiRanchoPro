@@ -11,7 +11,8 @@ import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.model.Lote
 import com.equipo.miranchopro.data.model.Usuario
 
-@Database(entities = [Usuario::class, Lote::class, Animal::class], version = 3, exportSchema = false)
+// Incrementamos la versión de 3 a 4 debido al cambio en el modelo Animal
+@Database(entities = [Usuario::class, Lote::class, Animal::class], version = 4, exportSchema = false)
 abstract class RanchoDatabase : RoomDatabase() {
 
     abstract fun usuarioDao(): UsuarioDao
@@ -29,7 +30,7 @@ abstract class RanchoDatabase : RoomDatabase() {
                     RanchoDatabase::class.java,
                     "rancho_database"
                 )
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration() // Esto permitirá que la app no truene al cambiar la versión
                 .build()
                 INSTANCE = instance
                 instance

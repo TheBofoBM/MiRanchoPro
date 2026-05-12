@@ -32,6 +32,10 @@ import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaRegistrarLote
 import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaDetalleLote
 import com.equipo.miranchopro.viewmodel.LotesViewModel
 
+// Imports para Reportes e Inventario
+import com.equipo.miranchopro.domain.usecase.GenerarReporteUseCase
+import com.equipo.miranchopro.interfaz.pantallas.reportes.PantallaReportes
+import com.equipo.miranchopro.viewmodel.ReporteViewModel
 import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaEditarAnimal
 import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaInventario
 import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaRegistrarAnimal
@@ -182,7 +186,13 @@ fun NavegacionApp() {
             composable(Pantalla.Inicio.ruta) { PantallaEnConstruccion("Inicio") }
             composable(Pantalla.Salud.ruta) { PantallaEnConstruccion("Médico") }
             composable(Pantalla.Tareas.ruta) { PantallaEnConstruccion("Tareas") }
-            composable(Pantalla.Reportes.ruta) { PantallaEnConstruccion("Reportes") }
+            
+            // SECCIÓN DE REPORTES ACTUALIZADA
+            composable(Pantalla.Reportes.ruta) {
+                val useCase = GenerarReporteUseCase(repoAnimales)
+                val reporteViewModel: ReporteViewModel = viewModel { ReporteViewModel(useCase) }
+                PantallaReportes(viewModel = reporteViewModel)
+            }
 
             // INVENTARIO
             composable(Pantalla.Inventario.ruta) {
