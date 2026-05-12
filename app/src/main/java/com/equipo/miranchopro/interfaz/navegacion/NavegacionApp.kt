@@ -38,7 +38,9 @@ sealed class Pantalla(val ruta: String) {
     object Login : Pantalla("login")
     object Registro : Pantalla("registro")
     object Inventario : Pantalla("inventario")
-    object RegistrarAnimal : Pantalla("registrar_animal")
+    object RegistrarAnimal : Pantalla("registrar_animal?tipo={tipo}") {
+        fun crearRuta(tipo: String? = null) = if (tipo != null) "registrar_animal?tipo=$tipo" else "registrar_animal"
+    }
     object EditarAnimal : Pantalla("editar_animal/{idArete}") {
         fun crearRuta(idArete: String) = "editar_animal/$idArete"
     }
@@ -96,7 +98,7 @@ fun NavegacionApp() {
                     items.forEach { item ->
                         // Lógica para mantener seleccionado el icono correcto
                         val esSeleccionado = currentDestination?.hierarchy?.any { it.route == item.ruta } == true ||
-                                (item == ItemNavegacion.Ganado && (currentDestination?.route == Pantalla.RegistrarAnimal.ruta || currentDestination?.route?.startsWith("editar_animal") == true))
+                                (item == ItemNavegacion.Ganado && (currentDestination?.route?.startsWith("registrar_animal") == true || currentDestination?.route?.startsWith("editar_animal") == true))
                         
                         NavigationBarItem(
                             icon = { 
@@ -173,11 +175,27 @@ fun NavegacionApp() {
                 PantallaInventario(
                     viewModel = invViewModel,
                     alSeleccionarAnimal = { idArete -> navController.navigate(Pantalla.EditarAnimal.crearRuta(idArete)) },
-                    alAgregarAnimal = { navController.navigate(Pantalla.RegistrarAnimal.ruta) }
+                    alAgregarAnimal = { tipo -> navController.navigate(Pantalla.RegistrarAnimal.crearRuta(tipo)) }
                 )
             }
-            composable(Pantalla.RegistrarAnimal.ruta) {
+            composable(
+                route = Pantalla.RegistrarAnimal.ruta,
+                arguments = listOf(navArgument("tipo") { 
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                })
+            ) { entrada ->
+                val tipoInicial = entrada.arguments?.getString("tipo")
                 val regViewModel: RegistrarAnimalViewModel = viewModel { RegistrarAnimalViewModel(repoAnimales) }
+                
+                // Si viene un tipo, lo pre-establecemos
+                LaunchedEffect(tipoInicial) {
+                    if (tipoInicial != null) {
+                        regViewModel.tipo = tipoInicial
+                    }
+                }
+
                 PantallaRegistrarAnimal(viewModel = regViewModel, alFinalizar = { navController.popBackStack() })
             }
             composable(

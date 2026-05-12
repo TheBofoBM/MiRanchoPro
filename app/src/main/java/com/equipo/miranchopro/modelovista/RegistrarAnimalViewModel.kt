@@ -16,12 +16,16 @@ class RegistrarAnimalViewModel(
 ) : ViewModel() {
 
     var idArete by mutableStateOf("")
+    var nombre by mutableStateOf("")
     var tipo by mutableStateOf("Vaca")
+    var raza by mutableStateOf("")
+    var edad by mutableStateOf("")
     var peso by mutableStateOf("")
-    var color by mutableStateOf("")
-    var marcas by mutableStateOf("")
+    var caracteristica by mutableStateOf("")
+    var origen by mutableStateOf("De parto")
     
     val tiposDisponibles = listOf("Vaca", "Toro", "Becerro", "Novillo", "Vaquilla")
+    val origenesDisponibles = listOf("De parto", "Comprada")
 
     var estaCargando by mutableStateOf(false)
         private set
@@ -38,8 +42,8 @@ class RegistrarAnimalViewModel(
     }
 
     fun registrarAnimal() {
-        if (idArete.isBlank() || peso.isBlank() || color.isBlank()) {
-            mensajeError = "El arete, peso y color son obligatorios"
+        if (idArete.isBlank() || peso.isBlank() || tipo.isBlank()) {
+            mensajeError = "Tag, Tipo y Peso son obligatorios"
             return
         }
 
@@ -55,10 +59,16 @@ class RegistrarAnimalViewModel(
         viewModelScope.launch {
             val nuevoAnimal = Animal(
                 idArete = idArete,
+                nombre = nombre,
                 tipo = tipo,
+                raza = if (raza.isBlank()) "No especificada" else raza,
+                edad = if (edad.isBlank()) "No especificada" else edad,
                 peso = pesoDouble,
-                color = color,
-                marcas = marcas
+                caracteristica = caracteristica,
+                origen = origen,
+                color = "No especificado",
+                marcas = "",
+                estado = "Sano"
             )
             
             val resultado = repositorio.registrarAnimal(nuevoAnimal)
@@ -66,22 +76,24 @@ class RegistrarAnimalViewModel(
             estaCargando = false
             
             resultado.onSuccess {
-                val msg = "Animal agregado exitosamente en la categoría $tipo"
+                val msg = "Animal #$idArete registrado exitosamente en $tipo"
                 limpiarCampos()
                 _eventoUI.emit(EventoUI.Exito(msg))
             }.onFailure { exception ->
-                mensajeError = "Error al registrar: el arete ya existe o hubo un fallo en la base de datos"
+                mensajeError = "Error: El tag ya existe o hubo un fallo en la BD"
                 _eventoUI.emit(EventoUI.Error(mensajeError!!))
             }
         }
     }
 
-    private fun limpiarCampos() {
+    fun limpiarCampos() {
         idArete = ""
-        // No limpiamos el tipo por si registra varios del mismo
+        nombre = ""
+        raza = ""
+        edad = ""
         peso = ""
-        color = ""
-        marcas = ""
+        caracteristica = ""
+        origen = "De parto"
         mensajeError = null
     }
 }

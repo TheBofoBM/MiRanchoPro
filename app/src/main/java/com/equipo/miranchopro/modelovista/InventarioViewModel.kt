@@ -29,6 +29,9 @@ class InventarioViewModel(
     var vistaActual by mutableStateOf(VistaInventario.CATEGORIAS)
     var categoriaSeleccionada by mutableStateOf<String?>(null)
 
+    // Secciones fijas del rancho
+    val tiposFijos = listOf("Vaca", "Toro", "Becerro", "Novillo", "Vaquilla")
+
     init {
         observarAnimales()
     }
@@ -43,13 +46,18 @@ class InventarioViewModel(
         }
     }
 
-    // Solo categorías de animales que NO están de baja
+    // Categorías fijas con su conteo actual
     val categorias: List<Pair<String, Int>>
-        get() = listaAnimales
-            .filter { it.estado != "Baja" }
-            .groupBy { it.tipo }
-            .map { it.key to it.value.size }
-            .sortedBy { it.first }
+        get() {
+            val mapaConteo = listaAnimales
+                .filter { it.estado != "Baja" }
+                .groupBy { it.tipo }
+                .mapValues { it.value.size }
+            
+            return tiposFijos.map { tipo ->
+                tipo to (mapaConteo[tipo] ?: 0)
+            }
+        }
 
     // Lista de animales que SI están de baja
     val animalesDeBaja: List<Animal>
@@ -70,6 +78,7 @@ class InventarioViewModel(
             } else {
                 base.filter {
                     it.idArete.contains(busqueda, ignoreCase = true) ||
+                    (it.nombre ?: "").contains(busqueda, ignoreCase = true) ||
                     it.raza.contains(busqueda, ignoreCase = true)
                 }
             }

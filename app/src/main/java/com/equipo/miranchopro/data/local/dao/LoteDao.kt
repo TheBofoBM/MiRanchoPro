@@ -1,4 +1,4 @@
-package com.equipo.miranchopro.data.dao
+package com.equipo.miranchopro.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert

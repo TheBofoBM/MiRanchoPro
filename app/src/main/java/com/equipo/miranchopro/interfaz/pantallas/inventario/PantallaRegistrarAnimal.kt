@@ -1,15 +1,23 @@
 package com.equipo.miranchopro.interfaz.pantallas.inventario
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.equipo.miranchopro.modelovista.RegistrarAnimalViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -21,14 +29,14 @@ fun PantallaRegistrarAnimal(
     alFinalizar: () -> Unit = {}
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    var expanded by remember { mutableStateOf(false) }
+    var expandedTipo by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.eventoUI.collectLatest { evento ->
             when (evento) {
                 is RegistrarAnimalViewModel.EventoUI.Exito -> {
                     snackbarHostState.showSnackbar(evento.mensaje)
-                    // Opcional: Podrías navegar atrás después de un tiempo
+                    alFinalizar()
                 }
                 is RegistrarAnimalViewModel.EventoUI.Error -> {
                     snackbarHostState.showSnackbar(evento.mensaje)
@@ -38,104 +46,235 @@ fun PantallaRegistrarAnimal(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Registrar Nuevo Animal") })
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { relleno ->
         Column(
             modifier = Modifier
                 .padding(relleno)
-                .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            // Selector de Categoría (Tipo)
+            // Header: Título y botón cerrar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Registrar Animal",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                IconButton(onClick = alFinalizar) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.Black)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Campo: Tag / Identificador
+            Text("Tag / Identificador", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = viewModel.idArete,
+                onValueChange = { viewModel.idArete = it },
+                placeholder = { Text("#007", color = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
+                )
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Campo: Nombre
+            Text("Nombre", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = viewModel.nombre,
+                onValueChange = { viewModel.nombre = it },
+                placeholder = { Text("Ej: Lucero", color = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
+                )
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Campo: Tipo de animal
+            Text("Tipo de animal", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
             ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
+                expanded = expandedTipo,
+                onExpandedChange = { expandedTipo = !expandedTipo },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
                     value = viewModel.tipo,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Categoría (Tipo)") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTipo) },
                     modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors()
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black
+                    )
                 )
                 ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    expanded = expandedTipo,
+                    onDismissRequest = { expandedTipo = false }
                 ) {
                     viewModel.tiposDisponibles.forEach { seleccion ->
                         DropdownMenuItem(
-                            text = { Text(seleccion) },
+                            text = { Text(seleccion, color = Color.Black) },
                             onClick = {
                                 viewModel.tipo = seleccion
-                                expanded = false
+                                expandedTipo = false
                             }
                         )
                     }
                 }
             }
 
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Campo: Raza
+            Text("Raza", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
-                value = viewModel.idArete,
-                onValueChange = { viewModel.idArete = it },
-                label = { Text("ID Arete (Obligatorio)") },
+                value = viewModel.raza,
+                onValueChange = { viewModel.raza = it },
+                placeholder = { Text("Holstein, Angus, etc.", color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
-                isError = viewModel.mensajeError?.contains("arete", ignoreCase = true) == true
-            )
-
-            OutlinedTextField(
-                value = viewModel.peso,
-                onValueChange = { viewModel.peso = it },
-                label = { Text("Peso (kg) (Obligatorio)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.fillMaxWidth(),
-                isError = viewModel.mensajeError?.contains("peso", ignoreCase = true) == true
-            )
-
-            OutlinedTextField(
-                value = viewModel.color,
-                onValueChange = { viewModel.color = it },
-                label = { Text("Color (Obligatorio)") },
-                modifier = Modifier.fillMaxWidth(),
-                isError = viewModel.mensajeError?.contains("color", ignoreCase = true) == true
-            )
-
-            OutlinedTextField(
-                value = viewModel.marcas,
-                onValueChange = { viewModel.marcas = it },
-                label = { Text("Marcas o Señas Particulares") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            if (viewModel.mensajeError != null) {
-                Text(
-                    text = viewModel.mensajeError!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
                 )
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Fila: Edad y Peso
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Edad", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = viewModel.edad,
+                        onValueChange = { viewModel.edad = it },
+                        placeholder = { Text("3 años", color = Color.Gray) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = Color(0xFFE0E0E0),
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
+                        )
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Peso (kg)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = viewModel.peso,
+                        onValueChange = { viewModel.peso = it },
+                        placeholder = { Text("520", color = Color.Gray) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = Color(0xFFE0E0E0),
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
+                        )
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Button(
-                onClick = { viewModel.registrarAnimal() },
+            // Campo: Característica
+            Text("Característica", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = viewModel.caracteristica,
+                onValueChange = { viewModel.caracteristica = it },
+                placeholder = { Text("Ej: Mancha blanca", color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !viewModel.estaCargando
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
+                )
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Campo: Origen (De parto / Comprada)
+            Text("Origen", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (viewModel.estaCargando) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+                viewModel.origenesDisponibles.forEach { opcion ->
+                    val seleccionado = viewModel.origen == opcion
+                    FilterChip(
+                        selected = seleccionado,
+                        onClick = { viewModel.origen = opcion },
+                        label = { Text(opcion) },
+                        leadingIcon = if (seleccionado) {
+                            { Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                        } else null,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFE0F2F1),
+                            selectedLabelColor = Color(0xFF008577),
+                            selectedLeadingIconColor = Color(0xFF008577)
+                        )
                     )
-                } else {
-                    Text("Guardar Animal")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Botones: Cancelar y Registrar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedButton(
+                    onClick = alFinalizar,
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
+                ) {
+                    Text("Cancelar", fontSize = 16.sp)
+                }
+                Button(
+                    onClick = { viewModel.registrarAnimal() },
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF008577)),
+                    enabled = !viewModel.estaCargando
+                ) {
+                    if (viewModel.estaCargando) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text("Registrar", fontSize = 16.sp)
+                    }
                 }
             }
         }

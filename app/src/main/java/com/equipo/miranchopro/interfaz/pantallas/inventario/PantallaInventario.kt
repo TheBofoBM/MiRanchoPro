@@ -28,7 +28,7 @@ import com.equipo.miranchopro.modelovista.VistaInventario
 fun PantallaInventario(
     viewModel: InventarioViewModel = viewModel(),
     alSeleccionarAnimal: (String) -> Unit = {},
-    alAgregarAnimal: () -> Unit = {}
+    alAgregarAnimal: (String?) -> Unit = {}
 ) {
     BackHandler(enabled = viewModel.vistaActual != VistaInventario.CATEGORIAS) {
         viewModel.volverACategorias()
@@ -36,14 +36,17 @@ fun PantallaInventario(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = alAgregarAnimal,
-                containerColor = Color(0xFF008577),
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier.size(72.dp).padding(8.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar", modifier = Modifier.size(36.dp))
+            // Solo mostramos el FAB si no estamos en la vista de bajas
+            if (viewModel.vistaActual != VistaInventario.DADOS_DE_BAJA) {
+                FloatingActionButton(
+                    onClick = { alAgregarAnimal(viewModel.categoriaSeleccionada) },
+                    containerColor = Color(0xFF008577),
+                    contentColor = Color.White,
+                    shape = CircleShape,
+                    modifier = Modifier.size(72.dp).padding(8.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar", modifier = Modifier.size(36.dp))
+                }
             }
         }
     ) { relleno ->
@@ -91,7 +94,7 @@ fun PantallaInventario(
                     
                     Text(
                         text = if (viewModel.vistaActual == VistaInventario.CATEGORIAS) 
-                            "${viewModel.listaAnimales.filter { it.estado != "Baja" }.size} animales registrados hoy"
+                            "${viewModel.listaAnimales.filter { it.estado != "Baja" }.size} animales registrados"
                         else 
                             "Explorando catálogo ganadero",
                         fontSize = 18.sp,
@@ -124,7 +127,7 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
                 text = "SECCIONES DEL RANCHO",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.LightGray,
+                color = Color.Gray,
                 letterSpacing = 2.sp
             )
         }
@@ -210,7 +213,7 @@ fun SeccionListaAnimales(
         OutlinedTextField(
             value = viewModel.busqueda,
             onValueChange = { viewModel.busqueda = it },
-            placeholder = { Text("Buscar por tag o raza...") },
+            placeholder = { Text("Buscar por tag, nombre o raza...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
             modifier = Modifier
                 .padding(horizontal = 20.dp, vertical = 12.dp)
@@ -220,7 +223,9 @@ fun SeccionListaAnimales(
                 focusedContainerColor = Color.White,
                 unfocusedContainerColor = Color.White,
                 unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedBorderColor = Color(0xFF008577)
+                focusedBorderColor = Color(0xFF008577),
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
             )
         )
 
@@ -229,8 +234,17 @@ fun SeccionListaAnimales(
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(viewModel.animalesFiltrados) { animal ->
-                TarjetaAnimalLujo(animal, onClick = { alSeleccionarAnimal(animal.idArete) })
+            val animales = viewModel.animalesFiltrados
+            if (animales.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+                        Text("No se encontraron animales", color = Color.Gray)
+                    }
+                }
+            } else {
+                items(animales) { animal ->
+                    TarjetaAnimalLujo(animal, onClick = { alSeleccionarAnimal(animal.idArete) })
+                }
             }
         }
     }
@@ -254,13 +268,14 @@ fun TarjetaAnimalLujo(animal: Animal, onClick: () -> Unit) {
                 Spacer(modifier = Modifier.weight(1f))
                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
             }
-            Text(text = "${animal.tipo} • ${animal.raza}", color = Color.Gray, fontSize = 16.sp, modifier = Modifier.padding(top = 4.dp))
+            val subtitulo = if (animal.nombre.isNotBlank()) "${animal.nombre} • ${animal.tipo}" else animal.tipo
+            Text(text = "$subtitulo • ${animal.raza}", color = Color.Gray, fontSize = 16.sp, modifier = Modifier.padding(top = 4.dp))
             
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color(0xFFF1F3F4))
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 InfoItemLujo(label = "PESO", value = "${animal.peso} kg")
-                InfoItemLujo(label = "EDAD", value = animal.edad)
+                InfoItemLujo(label = "ORIGEN", value = animal.origen)
                 InfoItemLujo(label = "LOTE", value = animal.ubicacion)
             }
         }
