@@ -4,16 +4,19 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.equipo.miranchopro.data.local.dao.AnimalDao
 import com.equipo.miranchopro.data.local.dao.LoteDao
 import com.equipo.miranchopro.data.local.dao.UsuarioDao
+import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.model.Lote
 import com.equipo.miranchopro.data.model.Usuario
 
-@Database(entities = [Usuario::class, Lote::class], version = 1, exportSchema = false)
+@Database(entities = [Usuario::class, Lote::class, Animal::class], version = 2, exportSchema = false)
 abstract class RanchoDatabase : RoomDatabase() {
 
     abstract fun usuarioDao(): UsuarioDao
     abstract fun loteDao(): LoteDao
+    abstract fun animalDao(): AnimalDao
 
     companion object {
         @Volatile
@@ -25,7 +28,9 @@ abstract class RanchoDatabase : RoomDatabase() {
                     context.applicationContext,
                     RanchoDatabase::class.java,
                     "rancho_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

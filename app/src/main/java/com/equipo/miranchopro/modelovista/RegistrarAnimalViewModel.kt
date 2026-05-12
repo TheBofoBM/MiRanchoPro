@@ -12,13 +12,16 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class RegistrarAnimalViewModel(
-    private val repositorio: AnimalRepository = AnimalRepository()
+    private val repositorio: AnimalRepository
 ) : ViewModel() {
 
     var idArete by mutableStateOf("")
+    var tipo by mutableStateOf("Vaca")
     var peso by mutableStateOf("")
     var color by mutableStateOf("")
     var marcas by mutableStateOf("")
+    
+    val tiposDisponibles = listOf("Vaca", "Toro", "Becerro", "Novillo", "Vaquilla")
 
     var estaCargando by mutableStateOf(false)
         private set
@@ -30,12 +33,11 @@ class RegistrarAnimalViewModel(
     val eventoUI = _eventoUI.asSharedFlow()
 
     sealed class EventoUI {
-        object Exito : EventoUI()
+        data class Exito(val mensaje: String) : EventoUI()
         data class Error(val mensaje: String) : EventoUI()
     }
 
     fun registrarAnimal() {
-        // Validación básica
         if (idArete.isBlank() || peso.isBlank() || color.isBlank()) {
             mensajeError = "El arete, peso y color son obligatorios"
             return
@@ -53,6 +55,7 @@ class RegistrarAnimalViewModel(
         viewModelScope.launch {
             val nuevoAnimal = Animal(
                 idArete = idArete,
+                tipo = tipo,
                 peso = pesoDouble,
                 color = color,
                 marcas = marcas
@@ -63,25 +66,22 @@ class RegistrarAnimalViewModel(
             estaCargando = false
             
             resultado.onSuccess {
+                val msg = "Animal agregado exitosamente en la categoría $tipo"
                 limpiarCampos()
-                _eventoUI.emit(EventoUI.Exito)
+                _eventoUI.emit(EventoUI.Exito(msg))
             }.onFailure { exception ->
-                // CP-05.2 y CP-05.3: El repositorio devuelve el error específico
-                mensajeError = exception.message
-                _eventoUI.emit(EventoUI.Error(exception.message ?: "Error desconocido"))
+                mensajeError = "Error al registrar: el arete ya existe o hubo un fallo en la base de datos"
+                _eventoUI.emit(EventoUI.Error(mensajeError!!))
             }
         }
     }
 
     private fun limpiarCampos() {
         idArete = ""
+        // No limpiamos el tipo por si registra varios del mismo
         peso = ""
         color = ""
         marcas = ""
-        mensajeError = null
-    }
-
-    fun descartarError() {
         mensajeError = null
     }
 }

@@ -1,6 +1,11 @@
 package com.equipo.miranchopro.data.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "animales")
 data class Animal(
+    @PrimaryKey
     val idArete: String,
     val tipo: String = "Vaca",
     val raza: String = "Serrana",

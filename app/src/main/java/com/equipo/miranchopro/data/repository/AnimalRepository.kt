@@ -1,45 +1,39 @@
 package com.equipo.miranchopro.data.repository
 
+import com.equipo.miranchopro.data.local.dao.AnimalDao
 import com.equipo.miranchopro.data.model.Animal
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 
-class AnimalRepository {
-    private companion object {
-        val animalesMock = mutableListOf(
-            Animal("001", "Vaca", "Holstein", "3 años", 520.0, "Blanco y Negro", "Ninguna", "Lote A", "Sano"),
-            Animal("002", "Toro", "Angus", "4 años", 780.0, "Negro", "Cicatriz en lomo", "Lote B", "Sano"),
-            Animal("003", "Becerro", "Holstein", "6 meses", 180.0, "Blanco", "Mancha café", "Lote A", "Sano"),
-            Animal("004", "Vaca", "Jersey", "5 años", 450.0, "Café claro", "Ninguna", "Lote C", "En tratamiento"),
-            Animal("005", "Novillo", "Charolais", "2 años", 320.0, "Blanco", "Ninguna", "Lote B", "Sano")
-        )
-    }
+class AnimalRepository(private val animalDao: AnimalDao) {
 
-    suspend fun obtenerTodos(): List<Animal> {
-        delay(500)
-        return animalesMock
-    }
+    fun obtenerTodos(): Flow<List<Animal>> = animalDao.obtenerTodos()
 
-    suspend fun getAnimalById(idArete: String): Animal? {
-        delay(300)
-        return animalesMock.find { it.idArete == idArete }
-    }
+    suspend fun getAnimalById(idArete: String): Animal? = animalDao.obtenerPorId(idArete)
 
     suspend fun registrarAnimal(animal: Animal): Result<Boolean> {
-        delay(500)
-        if (animalesMock.any { it.idArete == animal.idArete }) {
-            return Result.failure(Exception("El arete ya existe"))
+        return try {
+            animalDao.insertar(animal)
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-        animalesMock.add(animal)
-        return Result.success(true)
     }
 
     suspend fun updateAnimal(animal: Animal): Boolean {
-        delay(500)
-        val index = animalesMock.indexOfFirst { it.idArete == animal.idArete }
-        if (index != -1) {
-            animalesMock[index] = animal
-            return true
+        return try {
+            animalDao.actualizar(animal)
+            true
+        } catch (e: Exception) {
+            false
         }
-        return false
+    }
+
+    suspend fun eliminarAnimal(animal: Animal): Boolean {
+        return try {
+            animalDao.eliminar(animal)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }
