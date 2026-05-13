@@ -1,6 +1,5 @@
 package com.equipo.miranchopro.interfaz.navegacion
 
-<<<<<<< HEAD
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -48,6 +47,9 @@ import com.equipo.miranchopro.modelovista.RegistrarAnimalViewModel
 import com.equipo.miranchopro.viewmodel.LoginViewModel
 import com.equipo.miranchopro.viewmodel.RegistroViewModel
 
+// Nuevo import de la rama de Jose
+import com.equipo.miranchopro.interfaz.pantallas.tareas.PantallaTareas
+
 sealed class Pantalla(val ruta: String) {
     object Login : Pantalla("login")
     object Registro : Pantalla("registro")
@@ -83,14 +85,6 @@ sealed class ItemNavegacion(
     object Tareas : ItemNavegacion(Pantalla.Tareas.ruta, "Tareas", Icons.Outlined.Assignment, Icons.Filled.Assignment)
     object Reportes : ItemNavegacion(Pantalla.Reportes.ruta, "Reportes", Icons.Outlined.Assessment, Icons.Filled.Assessment)
 }
-=======
-import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaInventario
-import com.equipo.miranchopro.interfaz.pantallas.tareas.PantallaTareas
->>>>>>> origin/feature/jose-salud-operaciones
 
 @Composable
 fun NavegacionApp() {
@@ -98,7 +92,6 @@ fun NavegacionApp() {
     val context = LocalContext.current
     val database = RanchoDatabase.getDatabase(context)
 
-<<<<<<< HEAD
     val repoAnimales = AnimalRepository(database.animalDao())
     val repoLotes = LoteRepository(database.loteDao())
 
@@ -125,7 +118,6 @@ fun NavegacionApp() {
                         ItemNavegacion.Reportes
                     )
                     items.forEach { item ->
-                        // Lógica para mantener seleccionado el icono correcto incluso en sub-pantallas
                         val esSeleccionado = currentDestination?.hierarchy?.any { it.route == item.ruta } == true ||
                                 (item == ItemNavegacion.Ganado && (currentDestination?.route == Pantalla.RegistrarAnimal.ruta || currentDestination?.route?.startsWith("editar_animal") == true)) ||
                                 (item == ItemNavegacion.Lotes && (currentDestination?.route == Pantalla.RegistrarLote.ruta || currentDestination?.route?.startsWith("detalle_lote") == true))
@@ -195,19 +187,24 @@ fun NavegacionApp() {
             // PRINCIPALES
             composable(Pantalla.Inicio.ruta) { PantallaEnConstruccion("Inicio") }
             composable(Pantalla.Salud.ruta) { PantallaEnConstruccion("Médico") }
-            composable(Pantalla.Tareas.ruta) { PantallaEnConstruccion("Tareas") }
             
-            // SECCIÓN DE REPORTES ACTUALIZADA
+            // ACTUALIZADO: PantallaTareas ahora usa el componente real de la rama de Jose
+            composable(Pantalla.Tareas.ruta) { 
+                PantallaTareas(navController) 
+            }
+            
+            // SECCIÓN DE REPORTES
             composable(Pantalla.Reportes.ruta) {
                 val useCase = GenerarReporteUseCase(repoAnimales)
                 val reporteViewModel: ReporteViewModel = viewModel { ReporteViewModel(useCase) }
                 PantallaReportes(viewModel = reporteViewModel)
             }
 
-            // INVENTARIO
+            // INVENTARIO (ACTUALIZADO para pasar navController)
             composable(Pantalla.Inventario.ruta) {
                 val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
                 PantallaInventario(
+                    navController = navController,
                     viewModel = invViewModel,
                     alSeleccionarAnimal = { idArete -> navController.navigate(Pantalla.EditarAnimal.crearRuta(idArete)) },
                     alAgregarAnimal = { navController.navigate(Pantalla.RegistrarAnimal.ruta) }
@@ -256,11 +253,8 @@ fun NavegacionApp() {
                 val idLote = entrada.arguments?.getInt("idLote") ?: 0
                 val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
 
-                // Observamos la lista y filtramos el lote seleccionado
                 val lotes by lotesViewModel.lotes.collectAsState()
                 val loteSeleccionado = lotes.find { it.id == idLote }
-
-                // Pendiente: Filtrar animales por idLote usando tu AnimalViewModel o repositorio
                 val animalesEnLote = emptyList<Animal>()
 
                 if (loteSeleccionado != null) {
@@ -271,23 +265,11 @@ fun NavegacionApp() {
                         viewModel = lotesViewModel,
                         onVolver = { navController.popBackStack() },
                         onVerAnimal = { idAnimal ->
-                            // Aquí navegamos hacia la pantalla de edición de ese animal en particular
                             navController.navigate(Pantalla.EditarAnimal.crearRuta(idAnimal.toString()))
                         }
                     )
                 }
             }
-=======
-    NavHost(
-        navController = controladorNavegacion,
-        startDestination = Rutas.Tareas.ruta
-    ) {
-        composable(Rutas.Tareas.ruta) {
-            PantallaTareas(controladorNavegacion)
-        }
-        composable(Rutas.Inventario.ruta) {
-            PantallaInventario(controladorNavegacion)
->>>>>>> origin/feature/jose-salud-operaciones
         }
     }
 }
