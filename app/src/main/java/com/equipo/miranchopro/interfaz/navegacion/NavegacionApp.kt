@@ -47,8 +47,9 @@ import com.equipo.miranchopro.modelovista.RegistrarAnimalViewModel
 import com.equipo.miranchopro.viewmodel.LoginViewModel
 import com.equipo.miranchopro.viewmodel.RegistroViewModel
 
-// Nuevo import de la rama de Jose
 import com.equipo.miranchopro.interfaz.pantallas.tareas.PantallaTareas
+import com.equipo.miranchopro.interfaz.pantallas.salud.PantallaSalud
+import com.equipo.miranchopro.modelovista.MedicamentoViewModel
 
 sealed class Pantalla(val ruta: String) {
     object Login : Pantalla("login")
@@ -186,7 +187,12 @@ fun NavegacionApp() {
 
             // PRINCIPALES
             composable(Pantalla.Inicio.ruta) { PantallaEnConstruccion("Inicio") }
-            composable(Pantalla.Salud.ruta) { PantallaEnConstruccion("Médico") }
+            
+            // ACTUALIZADO: PantallaSalud ahora usa el componente real
+            composable(Pantalla.Salud.ruta) { 
+                val medViewModel: MedicamentoViewModel = viewModel()
+                PantallaSalud(viewModel = medViewModel)
+            }
             
             // ACTUALIZADO: PantallaTareas ahora usa el componente real de la rama de Jose
             composable(Pantalla.Tareas.ruta) { 
