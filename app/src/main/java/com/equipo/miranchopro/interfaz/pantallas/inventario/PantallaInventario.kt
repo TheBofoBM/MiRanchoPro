@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,17 +19,47 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.equipo.miranchopro.data.model.Animal
+import com.equipo.miranchopro.data.model.Medicamento
+import com.equipo.miranchopro.interfaz.componentes.DialogoMedicamento
+import com.equipo.miranchopro.interfaz.componentes.TarjetaMedicamento
+import com.equipo.miranchopro.interfaz.pantallas.tareas.BarraNavegacion
 import com.equipo.miranchopro.modelovista.InventarioViewModel
+import com.equipo.miranchopro.modelovista.MedicamentoViewModel
 import com.equipo.miranchopro.modelovista.VistaInventario
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaInventario(
+    navController: NavController,
     viewModel: InventarioViewModel = viewModel(),
+    medicamentoViewModel: MedicamentoViewModel = viewModel(),
     alSeleccionarAnimal: (String) -> Unit = {},
     alAgregarAnimal: () -> Unit = {}
 ) {
+    var mostrarDialogoMedicamento by remember { mutableStateOf(false) }
+    var medicamentoAEditar by remember { mutableStateOf<Medicamento?>(null) }
+
+    if (mostrarDialogoMedicamento) {
+        DialogoMedicamento(
+            medicamentoExistente = medicamentoAEditar,
+            onDismiss = {
+                mostrarDialogoMedicamento = false
+                medicamentoAEditar = null
+            },
+            onConfirm = { medicamento ->
+                if (medicamentoAEditar != null) {
+                    medicamentoViewModel.editarMedicamento(medicamento)
+                } else {
+                    medicamentoViewModel.agregarMedicamento(medicamento)
+                }
+                mostrarDialogoMedicamento = false
+                medicamentoAEditar = null
+            }
+        )
+    }
+
     BackHandler(enabled = viewModel.vistaActual != VistaInventario.CATEGORIAS) {
         viewModel.volverACategorias()
     }
@@ -37,7 +67,14 @@ fun PantallaInventario(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = alAgregarAnimal,
+                onClick = {
+                    if (viewModel.vistaActual == VistaInventario.MEDICAMENTOS) {
+                        medicamentoAEditar = null
+                        mostrarDialogoMedicamento = true
+                    } else {
+                        alAgregarAnimal()
+                    }
+                },
                 containerColor = Color(0xFF008577),
                 contentColor = Color.White,
                 shape = CircleShape,
@@ -45,7 +82,8 @@ fun PantallaInventario(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar", modifier = Modifier.size(36.dp))
             }
-        }
+        },
+        bottomBar = { BarraNavegacion(navController) }
     ) { relleno ->
         Column(
             modifier = Modifier
@@ -77,6 +115,7 @@ fun PantallaInventario(
                             text = when (viewModel.vistaActual) {
                                 VistaInventario.CATEGORIAS -> "Inventario"
                                 VistaInventario.DADOS_DE_BAJA -> "Bajas"
+                                VistaInventario.MEDICAMENTOS -> "Medicinas"
                                 VistaInventario.DETALLE_CATEGORIA -> viewModel.categoriaSeleccionada ?: "Lista"
                             },
                             fontSize = 48.sp,
@@ -90,10 +129,11 @@ fun PantallaInventario(
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     Text(
-                        text = if (viewModel.vistaActual == VistaInventario.CATEGORIAS) 
-                            "${viewModel.listaAnimales.filter { it.estado != "Baja" }.size} animales registrados hoy"
-                        else 
-                            "Explorando catálogo ganadero",
+                        text = when (viewModel.vistaActual) {
+                            VistaInventario.CATEGORIAS -> "${viewModel.listaAnimales.filter { it.estado != "Baja" }.size} animales registrados hoy"
+                            VistaInventario.MEDICAMENTOS -> "${medicamentoViewModel.listaMedicamentos.size} productos en total"
+                            else -> "Explorando catálogo ganadero"
+                        },
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF00BFA5)
@@ -105,6 +145,10 @@ fun PantallaInventario(
             Box(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
                 when (viewModel.vistaActual) {
                     VistaInventario.CATEGORIAS -> SeccionCategorias(viewModel)
+                    VistaInventario.MEDICAMENTOS -> SeccionMedicamentos(medicamentoViewModel) { med ->
+                        medicamentoAEditar = med
+                        mostrarDialogoMedicamento = true
+                    }
                     else -> SeccionListaAnimales(viewModel, alSeleccionarAnimal)
                 }
             }
@@ -143,6 +187,16 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
                     onClick = { viewModel.seleccionarCategoria(nombre) }
                 )
             }
+
+            item {
+                CardCategoriaLujo(
+                    titulo = "Medicamentos",
+                    subtitulo = "Insumos y Salud",
+                    icono = Icons.Default.MedicalServices,
+                    colorIcono = Color(0xFF2196F3),
+                    onClick = { viewModel.verMedicamentos() }
+                )
+            }
             
             item {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -155,6 +209,26 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
                     onClick = { viewModel.verBajas() }
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun SeccionMedicamentos(
+    viewModel: MedicamentoViewModel,
+    onEdit: (Medicamento) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(viewModel.listaMedicamentos) { medicamento ->
+            TarjetaMedicamento(
+                medicamento = medicamento,
+                onEdit = { onEdit(medicamento) },
+                onDelete = { viewModel.eliminarMedicamento(medicamento) }
+            )
         }
     }
 }

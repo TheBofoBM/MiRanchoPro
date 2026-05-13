@@ -1,5 +1,6 @@
 package com.equipo.miranchopro.interfaz.navegacion
 
+<<<<<<< HEAD
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -82,6 +83,14 @@ sealed class ItemNavegacion(
     object Tareas : ItemNavegacion(Pantalla.Tareas.ruta, "Tareas", Icons.Outlined.Assignment, Icons.Filled.Assignment)
     object Reportes : ItemNavegacion(Pantalla.Reportes.ruta, "Reportes", Icons.Outlined.Assessment, Icons.Filled.Assessment)
 }
+=======
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaInventario
+import com.equipo.miranchopro.interfaz.pantallas.tareas.PantallaTareas
+>>>>>>> origin/feature/jose-salud-operaciones
 
 @Composable
 fun NavegacionApp() {
@@ -89,6 +98,7 @@ fun NavegacionApp() {
     val context = LocalContext.current
     val database = RanchoDatabase.getDatabase(context)
 
+<<<<<<< HEAD
     val repoAnimales = AnimalRepository(database.animalDao())
     val repoLotes = LoteRepository(database.loteDao())
 
@@ -267,6 +277,17 @@ fun NavegacionApp() {
                     )
                 }
             }
+=======
+    NavHost(
+        navController = controladorNavegacion,
+        startDestination = Rutas.Tareas.ruta
+    ) {
+        composable(Rutas.Tareas.ruta) {
+            PantallaTareas(controladorNavegacion)
+        }
+        composable(Rutas.Inventario.ruta) {
+            PantallaInventario(controladorNavegacion)
+>>>>>>> origin/feature/jose-salud-operaciones
         }
     }
 }

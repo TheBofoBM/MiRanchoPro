@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 enum class VistaInventario {
     CATEGORIAS,
     DETALLE_CATEGORIA,
-    DADOS_DE_BAJA
+    DADOS_DE_BAJA,
+    MEDICAMENTOS
 }
 
 class InventarioViewModel(
@@ -82,6 +83,11 @@ class InventarioViewModel(
 
     fun verBajas() {
         vistaActual = VistaInventario.DADOS_DE_BAJA
+        categoriaSeleccionada = null
+    }
+
+    fun verMedicamentos() {
+        vistaActual = VistaInventario.MEDICAMENTOS
         categoriaSeleccionada = null
     }
 
