@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 enum class VistaInventario {
     CATEGORIAS,
     DETALLE_CATEGORIA,
-    DADOS_DE_BAJA
+    DADOS_DE_BAJA,
+    PENDIENTES
 }
 
 class InventarioViewModel(
@@ -29,7 +30,6 @@ class InventarioViewModel(
     var vistaActual by mutableStateOf(VistaInventario.CATEGORIAS)
     var categoriaSeleccionada by mutableStateOf<String?>(null)
 
-    // Secciones fijas del rancho
     val tiposFijos = listOf("Vaca", "Toro", "Becerro", "Novillo", "Vaquilla")
 
     init {
@@ -46,11 +46,10 @@ class InventarioViewModel(
         }
     }
 
-    // Categorías fijas con su conteo actual
     val categorias: List<Pair<String, Int>>
         get() {
             val mapaConteo = listaAnimales
-                .filter { it.estado != "Baja" }
+                .filter { it.estado != "Baja" && it.estado != "Pendiente" }
                 .groupBy { it.tipo }
                 .mapValues { it.value.size }
             
@@ -59,18 +58,16 @@ class InventarioViewModel(
             }
         }
 
-    // Lista de animales que SI están de baja
-    val animalesDeBaja: List<Animal>
-        get() = listaAnimales.filter { it.estado == "Baja" }
+    val conteoPendientes: Int
+        get() = listaAnimales.count { it.estado == "Pendiente" }
 
     val animalesFiltrados: List<Animal>
         get() {
-            val base = if (vistaActual == VistaInventario.DADOS_DE_BAJA) {
-                animalesDeBaja
-            } else if (categoriaSeleccionada != null) {
-                listaAnimales.filter { it.tipo == categoriaSeleccionada && it.estado != "Baja" }
-            } else {
-                listaAnimales.filter { it.estado != "Baja" }
+            val base = when (vistaActual) {
+                VistaInventario.DADOS_DE_BAJA -> listaAnimales.filter { it.estado == "Baja" }
+                VistaInventario.PENDIENTES -> listaAnimales.filter { it.estado == "Pendiente" }
+                VistaInventario.DETALLE_CATEGORIA -> listaAnimales.filter { it.tipo == categoriaSeleccionada && it.estado != "Baja" && it.estado != "Pendiente" }
+                else -> listaAnimales.filter { it.estado != "Baja" && it.estado != "Pendiente" }
             }
             
             return if (busqueda.isBlank()) {
@@ -91,6 +88,11 @@ class InventarioViewModel(
 
     fun verBajas() {
         vistaActual = VistaInventario.DADOS_DE_BAJA
+        categoriaSeleccionada = null
+    }
+
+    fun verPendientes() {
+        vistaActual = VistaInventario.PENDIENTES
         categoriaSeleccionada = null
     }
 

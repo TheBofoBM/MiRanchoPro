@@ -7,8 +7,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,14 +58,14 @@ fun PantallaRegistrarAnimal(
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header: Título y botón cerrar
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Registrar Animal",
+                    text = if (viewModel.horaNacimientoRegistrada != null) "Completar Nacimiento" else "Registrar Animal",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -73,15 +75,37 @@ fun PantallaRegistrarAnimal(
                 }
             }
 
+            // Info de la hora capturada por el agitado
+            viewModel.horaNacimientoRegistrada?.let { hora ->
+                Spacer(modifier = Modifier.height(16.dp))
+                Surface(
+                    color = Color(0xFFE0F2F1),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF008577))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Hora de nacimiento capturada", fontSize = 12.sp, color = Color(0xFF00695C))
+                            Text(hora, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF004D40))
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // Campo: Tag / Identificador
-            Text("Tag / Identificador", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Text("Tag / Identificador (Arete)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = viewModel.idArete,
                 onValueChange = { viewModel.idArete = it },
-                placeholder = { Text("#007", color = Color.Gray) },
+                placeholder = { Text("Ej: A-102", color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -94,7 +118,7 @@ fun PantallaRegistrarAnimal(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Campo: Nombre
-            Text("Nombre", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Text("Nombre (Opcional)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = viewModel.nombre,
@@ -111,72 +135,14 @@ fun PantallaRegistrarAnimal(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Campo: Tipo de animal
-            Text("Tipo de animal", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
-            Spacer(modifier = Modifier.height(8.dp))
-            ExposedDropdownMenuBox(
-                expanded = expandedTipo,
-                onExpandedChange = { expandedTipo = !expandedTipo },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = viewModel.tipo,
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTipo) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color(0xFFE0E0E0),
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
-                    )
-                )
-                ExposedDropdownMenu(
-                    expanded = expandedTipo,
-                    onDismissRequest = { expandedTipo = false }
-                ) {
-                    viewModel.tiposDisponibles.forEach { seleccion ->
-                        DropdownMenuItem(
-                            text = { Text(seleccion, color = Color.Black) },
-                            onClick = {
-                                viewModel.tipo = seleccion
-                                expandedTipo = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Campo: Raza
-            Text("Raza", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = viewModel.raza,
-                onValueChange = { viewModel.raza = it },
-                placeholder = { Text("Holstein, Angus, etc.", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color(0xFFE0E0E0),
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
-                )
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Fila: Edad y Peso
+            // Fila: Raza y Peso
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Edad", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+                    Text("Raza", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
-                        value = viewModel.edad,
-                        onValueChange = { viewModel.edad = it },
-                        placeholder = { Text("3 años", color = Color.Gray) },
+                        value = viewModel.raza,
+                        onValueChange = { viewModel.raza = it },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = Color(0xFFE0E0E0),
@@ -186,12 +152,12 @@ fun PantallaRegistrarAnimal(
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Peso (kg)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+                    Text("Peso Nacimiento (kg)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = viewModel.peso,
                         onValueChange = { viewModel.peso = it },
-                        placeholder = { Text("520", color = Color.Gray) },
+                        placeholder = { Text("35.5", color = Color.Gray) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -205,63 +171,17 @@ fun PantallaRegistrarAnimal(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Campo: Característica
-            Text("Característica", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = viewModel.caracteristica,
-                onValueChange = { viewModel.caracteristica = it },
-                placeholder = { Text("Ej: Mancha blanca", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color(0xFFE0E0E0),
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
-                )
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Campo: Origen (De parto / Comprada)
-            Text("Origen", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
-            Spacer(modifier = Modifier.height(8.dp))
+            // Botones
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                viewModel.origenesDisponibles.forEach { opcion ->
-                    val seleccionado = viewModel.origen == opcion
-                    FilterChip(
-                        selected = seleccionado,
-                        onClick = { viewModel.origen = opcion },
-                        label = { Text(opcion) },
-                        leadingIcon = if (seleccionado) {
-                            { Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
-                        } else null,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFE0F2F1),
-                            selectedLabelColor = Color(0xFF008577),
-                            selectedLeadingIconColor = Color(0xFF008577)
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Botones: Cancelar y Registrar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 OutlinedButton(
                     onClick = alFinalizar,
                     modifier = Modifier.weight(1f).height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Cancelar", fontSize = 16.sp)
+                    Text("Cancelar")
                 }
                 Button(
                     onClick = { viewModel.registrarAnimal() },
@@ -271,9 +191,9 @@ fun PantallaRegistrarAnimal(
                     enabled = !viewModel.estaCargando
                 ) {
                     if (viewModel.estaCargando) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                     } else {
-                        Text("Registrar", fontSize = 16.sp)
+                        Text(if (viewModel.horaNacimientoRegistrada != null) "Finalizar" else "Registrar")
                     }
                 }
             }

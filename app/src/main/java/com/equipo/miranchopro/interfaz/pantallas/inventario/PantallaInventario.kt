@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.modelovista.InventarioViewModel
 import com.equipo.miranchopro.modelovista.VistaInventario
@@ -26,7 +25,7 @@ import com.equipo.miranchopro.modelovista.VistaInventario
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaInventario(
-    viewModel: InventarioViewModel = viewModel(),
+    viewModel: InventarioViewModel,
     alSeleccionarAnimal: (String) -> Unit = {},
     alAgregarAnimal: (String?) -> Unit = {}
 ) {
@@ -36,8 +35,7 @@ fun PantallaInventario(
 
     Scaffold(
         floatingActionButton = {
-            // Solo mostramos el FAB si no estamos en la vista de bajas
-            if (viewModel.vistaActual != VistaInventario.DADOS_DE_BAJA) {
+            if (viewModel.vistaActual != VistaInventario.DADOS_DE_BAJA && viewModel.vistaActual != VistaInventario.PENDIENTES) {
                 FloatingActionButton(
                     onClick = { alAgregarAnimal(viewModel.categoriaSeleccionada) },
                     containerColor = Color(0xFF008577),
@@ -80,6 +78,7 @@ fun PantallaInventario(
                             text = when (viewModel.vistaActual) {
                                 VistaInventario.CATEGORIAS -> "Inventario"
                                 VistaInventario.DADOS_DE_BAJA -> "Bajas"
+                                VistaInventario.PENDIENTES -> "Pendientes"
                                 VistaInventario.DETALLE_CATEGORIA -> viewModel.categoriaSeleccionada ?: "Lista"
                             },
                             fontSize = 48.sp,
@@ -93,18 +92,18 @@ fun PantallaInventario(
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     Text(
-                        text = if (viewModel.vistaActual == VistaInventario.CATEGORIAS) 
-                            "${viewModel.listaAnimales.filter { it.estado != "Baja" }.size} animales registrados"
-                        else 
-                            "Explorando catálogo ganadero",
+                        text = when(viewModel.vistaActual) {
+                            VistaInventario.CATEGORIAS -> "${viewModel.listaAnimales.filter { it.estado != "Baja" && it.estado != "Pendiente" }.size} animales registrados"
+                            VistaInventario.PENDIENTES -> "Nacimientos por completar"
+                            else -> "Explorando catálogo ganadero"
+                        },
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF00BFA5)
+                        color = if (viewModel.vistaActual == VistaInventario.PENDIENTES) Color(0xFFFFC107) else Color(0xFF00BFA5)
                     )
                 }
             }
 
-            // CONTENIDO
             Box(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
                 when (viewModel.vistaActual) {
                     VistaInventario.CATEGORIAS -> SeccionCategorias(viewModel)
@@ -122,6 +121,29 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        if (viewModel.conteoPendientes > 0) {
+            item {
+                Text(
+                    text = "REGISTROS POR COMPLETAR",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFFD32F2F),
+                    letterSpacing = 2.sp
+                )
+            }
+            item {
+                CardCategoriaLujo(
+                    titulo = "Nacimientos Pendientes",
+                    subtitulo = "${viewModel.conteoPendientes} registros rápidos",
+                    colorFondo = Color(0xFFFFF8E1),
+                    icono = Icons.Default.NewReleases,
+                    colorIcono = Color(0xFFFFA000),
+                    onClick = { viewModel.verPendientes() }
+                )
+            }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+        }
+
         item {
             Text(
                 text = "SECCIONES DEL RANCHO",
@@ -210,24 +232,26 @@ fun SeccionListaAnimales(
     alSeleccionarAnimal: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = viewModel.busqueda,
-            onValueChange = { viewModel.busqueda = it },
-            placeholder = { Text("Buscar por tag, nombre o raza...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-            modifier = Modifier
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedBorderColor = Color(0xFF008577),
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black
+        if (viewModel.vistaActual != VistaInventario.PENDIENTES) {
+            OutlinedTextField(
+                value = viewModel.busqueda,
+                onValueChange = { viewModel.busqueda = it },
+                placeholder = { Text("Buscar por tag, nombre o raza...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                modifier = Modifier
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedBorderColor = Color(0xFF008577),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
+                )
             )
-        )
+        }
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -238,7 +262,12 @@ fun SeccionListaAnimales(
             if (animales.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                        Text("No se encontraron animales", color = Color.Gray)
+                        Text(
+                            text = if (viewModel.vistaActual == VistaInventario.PENDIENTES) 
+                                "No hay nacimientos pendientes" 
+                            else "No se encontraron animales", 
+                            color = Color.Gray
+                        )
                     }
                 }
             } else {
@@ -262,21 +291,41 @@ fun TarjetaAnimalLujo(animal: Animal, onClick: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "#${animal.idArete}", fontWeight = FontWeight.Black, fontSize = 24.sp, color = Color.Black)
+                Text(
+                    text = if (animal.estado == "Pendiente") "Registro Rápido" else "#${animal.idArete}", 
+                    fontWeight = FontWeight.Black, 
+                    fontSize = 20.sp, 
+                    color = Color.Black
+                )
                 Spacer(modifier = Modifier.width(12.dp))
                 EstadoBadgeLujo(animal.estado)
                 Spacer(modifier = Modifier.weight(1f))
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
+                Icon(Icons.Default.EditNote, contentDescription = null, tint = if(animal.estado == "Pendiente") Color(0xFFFFA000) else Color.LightGray)
             }
-            val subtitulo = if (animal.nombre.isNotBlank()) "${animal.nombre} • ${animal.tipo}" else animal.tipo
-            Text(text = "$subtitulo • ${animal.raza}", color = Color.Gray, fontSize = 16.sp, modifier = Modifier.padding(top = 4.dp))
+            
+            val subtitulo = if (animal.estado == "Pendiente") {
+                "Registrado a las ${animal.horaNacimiento ?: "--:--"}"
+            } else {
+                if (animal.nombre.isNotBlank()) "${animal.nombre} • ${animal.tipo}" else animal.tipo
+            }
+            
+            Text(
+                text = if (animal.estado == "Pendiente") subtitulo else "$subtitulo • ${animal.raza}", 
+                color = Color.Gray, 
+                fontSize = 16.sp, 
+                modifier = Modifier.padding(top = 4.dp)
+            )
             
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color(0xFFF1F3F4))
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                InfoItemLujo(label = "PESO", value = "${animal.peso} kg")
-                InfoItemLujo(label = "ORIGEN", value = animal.origen)
-                InfoItemLujo(label = "LOTE", value = animal.ubicacion)
+                if (animal.estado == "Pendiente") {
+                    Text("Toca para completar el registro con el arete y peso real", fontSize = 12.sp, color = Color(0xFF008577), fontWeight = FontWeight.Bold)
+                } else {
+                    InfoItemLujo(label = "PESO", value = "${animal.peso} kg")
+                    InfoItemLujo(label = "ORIGEN", value = animal.origen)
+                    InfoItemLujo(label = "LOTE", value = animal.ubicacion)
+                }
             }
         }
     }
@@ -287,12 +336,14 @@ fun EstadoBadgeLujo(estado: String) {
     val colorBase = when(estado) {
         "Sano" -> Color(0xFFE8F5E9)
         "Baja" -> Color(0xFFFFEBEE)
-        else -> Color(0xFFFFF3E0)
+        "Pendiente" -> Color(0xFFFFF3E0)
+        else -> Color(0xFFF5F5F5)
     }
     val colorTexto = when(estado) {
         "Sano" -> Color(0xFF2E7D32)
         "Baja" -> Color(0xFFC62828)
-        else -> Color(0xFFEF6C00)
+        "Pendiente" -> Color(0xFFE65100)
+        else -> Color(0xFF616161)
     }
     Surface(color = colorBase, shape = RoundedCornerShape(8.dp)) {
         Text(

@@ -17,6 +17,7 @@ data class Animal(
     val color: String = "No especificado",
     val marcas: String = "",
     val ubicacion: String = "Lote A",
-    val estado: String = "Sano",
-    val fechaRegistro: Long = System.currentTimeMillis() // Añadimos la fecha de registro
+    val estado: String = "Sano", // "Sano", "Baja", "Pendiente"
+    val fechaRegistro: Long = System.currentTimeMillis(),
+    val horaNacimiento: String? = null // Para el registro rápido de nacimientos
 )

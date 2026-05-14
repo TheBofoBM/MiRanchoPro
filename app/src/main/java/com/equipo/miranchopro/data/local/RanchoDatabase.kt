@@ -11,7 +11,7 @@ import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.model.Lote
 import com.equipo.miranchopro.data.model.Usuario
 
-@Database(entities = [Usuario::class, Lote::class, Animal::class], version = 4, exportSchema = false)
+@Database(entities = [Usuario::class, Lote::class, Animal::class], version = 5, exportSchema = false)
 abstract class RanchoDatabase : RoomDatabase() {
 
     abstract fun usuarioDao(): UsuarioDao
