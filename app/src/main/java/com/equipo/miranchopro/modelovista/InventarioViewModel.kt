@@ -107,4 +107,10 @@ class InventarioViewModel(
         vistaActual = VistaInventario.CATEGORIAS
         busqueda = ""
     }
+
+    fun cancelarRegistroPendiente(animal: Animal) {
+        viewModelScope.launch {
+            repositorio.eliminarAnimal(animal)
+        }
+    }
 }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,8 +32,31 @@ fun PantallaInventario(
     alSeleccionarAnimal: (String) -> Unit = {},
     alAgregarAnimal: (String?) -> Unit = {}
 ) {
+    var animalACancelar by remember { mutableStateOf<Animal?>(null) }
+
     BackHandler(enabled = viewModel.vistaActual != VistaInventario.CATEGORIAS) {
         viewModel.volverACategorias()
+    }
+
+    if (animalACancelar != null) {
+        AlertDialog(
+            onDismissRequest = { animalACancelar = null },
+            title = { Text("¿Cancelar registro?") },
+            text = { Text("Se eliminará permanentemente el registro temporal de este nacimiento.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    animalACancelar?.let { viewModel.cancelarRegistroPendiente(it) }
+                    animalACancelar = null
+                }) {
+                    Text("Eliminar", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { animalACancelar = null }) {
+                    Text("Volver")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -110,7 +134,11 @@ fun PantallaInventario(
             Box(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
                 when (viewModel.vistaActual) {
                     VistaInventario.CATEGORIAS -> SeccionCategorias(viewModel)
-                    else -> SeccionListaAnimales(viewModel, alSeleccionarAnimal)
+                    else -> SeccionListaAnimales(
+                        viewModel = viewModel, 
+                        alSeleccionarAnimal = alSeleccionarAnimal,
+                        alCancelarPendiente = { animalACancelar = it }
+                    )
                 }
             }
         }
@@ -232,7 +260,8 @@ fun CardCategoriaLujo(
 @Composable
 fun SeccionListaAnimales(
     viewModel: InventarioViewModel,
-    alSeleccionarAnimal: (String) -> Unit
+    alSeleccionarAnimal: (String) -> Unit,
+    alCancelarPendiente: (Animal) -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         if (viewModel.vistaActual != VistaInventario.PENDIENTES) {
@@ -275,7 +304,11 @@ fun SeccionListaAnimales(
                 }
             } else {
                 items(animales) { animal ->
-                    TarjetaAnimalLujo(animal, onClick = { alSeleccionarAnimal(animal.idArete) })
+                    TarjetaAnimalLujo(
+                        animal = animal, 
+                        onClick = { alSeleccionarAnimal(animal.idArete) },
+                        onCancelar = { alCancelarPendiente(animal) }
+                    )
                 }
             }
         }
@@ -284,7 +317,11 @@ fun SeccionListaAnimales(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TarjetaAnimalLujo(animal: Animal, onClick: () -> Unit) {
+fun TarjetaAnimalLujo(
+    animal: Animal, 
+    onClick: () -> Unit,
+    onCancelar: () -> Unit = {}
+) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -303,7 +340,22 @@ fun TarjetaAnimalLujo(animal: Animal, onClick: () -> Unit) {
                 Spacer(modifier = Modifier.width(12.dp))
                 EstadoBadgeLujo(animal.estado)
                 Spacer(modifier = Modifier.weight(1f))
-                Icon(Icons.Default.EditNote, contentDescription = null, tint = if(animal.estado == "Pendiente") Color(0xFFFFA000) else Color.LightGray)
+                
+                if (animal.estado == "Pendiente") {
+                    IconButton(onClick = onCancelar) {
+                        Icon(
+                            imageVector = Icons.Outlined.DeleteOutline, 
+                            contentDescription = "Cancelar registro", 
+                            tint = Color.Red
+                        )
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.EditNote, 
+                        contentDescription = null, 
+                        tint = Color.LightGray
+                    )
+                }
             }
             
             val subtitulo = if (animal.estado == "Pendiente") {

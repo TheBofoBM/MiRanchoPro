@@ -13,23 +13,16 @@ data class ReporteInventario(
     val totalPeso: Double,
     val conteoPorRaza: Map<String, Int>,
     val conteoPorEstado: Map<String, Int>,
-<<<<<<< HEAD
     val conteoPorUbicacion: Map<String, Int>,
     val conteoPorOrigen: Map<String, Int>,
-=======
->>>>>>> origin/feature/adolfo-inventario-configuracion
     val animalesRecientes: List<Animal>
 )
 
 class GenerarReporteUseCase(private val repository: AnimalRepository) {
 
     suspend fun ejecutar(): ReporteInventario {
-<<<<<<< HEAD
-        val listaAnimales: List<Animal> = repository.obtenerTodos().first()
-=======
         // Obtenemos la lista actual de animales (usando first() para obtener el valor actual del Flow)
         val listaAnimales = repository.obtenerTodos().first()
->>>>>>> origin/feature/adolfo-inventario-configuracion
         
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         val fechaHoy = sdf.format(Date())
@@ -44,14 +37,10 @@ class GenerarReporteUseCase(private val repository: AnimalRepository) {
             totalPeso = pesoTotal,
             conteoPorRaza = listaAnimales.groupBy { it.raza }.mapValues { it.value.size },
             conteoPorEstado = listaAnimales.groupBy { it.estado }.mapValues { it.value.size },
-<<<<<<< HEAD
             conteoPorUbicacion = listaAnimales.groupBy { it.ubicacion }.mapValues { it.value.size },
-            conteoPorOrigen = listaAnimales.groupBy { a: Animal -> a.origen }.mapValues { it.value.size },
-            animalesRecientes = listaAnimales.sortedByDescending { a: Animal -> a.fechaRegistro }
-=======
+            conteoPorOrigen = listaAnimales.groupBy { it.origen }.mapValues { it.value.size },
             // Ordenamos por fecha de registro (más recientes primero)
             animalesRecientes = listaAnimales.sortedByDescending { it.fechaRegistro }
->>>>>>> origin/feature/adolfo-inventario-configuracion
         )
     }
 }
