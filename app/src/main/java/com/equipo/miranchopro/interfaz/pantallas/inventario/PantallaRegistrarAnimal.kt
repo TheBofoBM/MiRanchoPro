@@ -1,15 +1,25 @@
 package com.equipo.miranchopro.interfaz.pantallas.inventario
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.equipo.miranchopro.modelovista.RegistrarAnimalViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -21,14 +31,14 @@ fun PantallaRegistrarAnimal(
     alFinalizar: () -> Unit = {}
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    var expanded by remember { mutableStateOf(false) }
+    var expandedTipo by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.eventoUI.collectLatest { evento ->
             when (evento) {
                 is RegistrarAnimalViewModel.EventoUI.Exito -> {
                     snackbarHostState.showSnackbar(evento.mensaje)
-                    // Opcional: Podrías navegar atrás después de un tiempo
+                    alFinalizar()
                 }
                 is RegistrarAnimalViewModel.EventoUI.Error -> {
                     snackbarHostState.showSnackbar(evento.mensaje)
@@ -38,104 +48,153 @@ fun PantallaRegistrarAnimal(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Registrar Nuevo Animal") })
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { relleno ->
         Column(
             modifier = Modifier
                 .padding(relleno)
-                .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            // Selector de Categoría (Tipo)
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = Modifier.fillMaxWidth()
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = viewModel.tipo,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Categoría (Tipo)") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors()
+                Text(
+                    text = if (viewModel.horaNacimientoRegistrada != null) "Completar Nacimiento" else "Registrar Animal",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                IconButton(onClick = alFinalizar) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.Black)
+                }
+            }
+
+            // Info de la hora capturada por el agitado
+            viewModel.horaNacimientoRegistrada?.let { hora ->
+                Spacer(modifier = Modifier.height(16.dp))
+                Surface(
+                    color = Color(0xFFE0F2F1),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    viewModel.tiposDisponibles.forEach { seleccion ->
-                        DropdownMenuItem(
-                            text = { Text(seleccion) },
-                            onClick = {
-                                viewModel.tipo = seleccion
-                                expanded = false
-                            }
-                        )
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF008577))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Hora de nacimiento capturada", fontSize = 12.sp, color = Color(0xFF00695C))
+                            Text(hora, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF004D40))
+                        }
                     }
                 }
             }
 
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Campo: Tag / Identificador
+            Text("Tag / Identificador (Arete)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = viewModel.idArete,
                 onValueChange = { viewModel.idArete = it },
-                label = { Text("ID Arete (Obligatorio)") },
+                placeholder = { Text("Ej: A-102", color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
-                isError = viewModel.mensajeError?.contains("arete", ignoreCase = true) == true
-            )
-
-            OutlinedTextField(
-                value = viewModel.peso,
-                onValueChange = { viewModel.peso = it },
-                label = { Text("Peso (kg) (Obligatorio)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.fillMaxWidth(),
-                isError = viewModel.mensajeError?.contains("peso", ignoreCase = true) == true
-            )
-
-            OutlinedTextField(
-                value = viewModel.color,
-                onValueChange = { viewModel.color = it },
-                label = { Text("Color (Obligatorio)") },
-                modifier = Modifier.fillMaxWidth(),
-                isError = viewModel.mensajeError?.contains("color", ignoreCase = true) == true
-            )
-
-            OutlinedTextField(
-                value = viewModel.marcas,
-                onValueChange = { viewModel.marcas = it },
-                label = { Text("Marcas o Señas Particulares") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            if (viewModel.mensajeError != null) {
-                Text(
-                    text = viewModel.mensajeError!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
                 )
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Campo: Nombre
+            Text("Nombre (Opcional)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = viewModel.nombre,
+                onValueChange = { viewModel.nombre = it },
+                placeholder = { Text("Ej: Lucero", color = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
+                )
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Fila: Raza y Peso
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Raza", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = viewModel.raza,
+                        onValueChange = { viewModel.raza = it },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = Color(0xFFE0E0E0),
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
+                        )
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Peso Nacimiento (kg)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = viewModel.peso,
+                        onValueChange = { viewModel.peso = it },
+                        placeholder = { Text("35.5", color = Color.Gray) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = Color(0xFFE0E0E0),
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
+                        )
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Button(
-                onClick = { viewModel.registrarAnimal() },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !viewModel.estaCargando
+            // Botones
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (viewModel.estaCargando) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Guardar Animal")
+                OutlinedButton(
+                    onClick = alFinalizar,
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancelar")
+                }
+                Button(
+                    onClick = { viewModel.registrarAnimal() },
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF008577)),
+                    enabled = !viewModel.estaCargando
+                ) {
+                    if (viewModel.estaCargando) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    } else {
+                        Text(if (viewModel.horaNacimientoRegistrada != null) "Finalizar" else "Registrar")
+                    }
                 }
             }
         }
