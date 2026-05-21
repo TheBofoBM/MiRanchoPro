@@ -1,6 +1,7 @@
 package com.equipo.miranchopro.data.repository
 
 import com.equipo.miranchopro.data.local.dao.LoteDao
+import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.model.Lote
 import kotlinx.coroutines.flow.Flow
 
@@ -21,4 +22,10 @@ class LoteRepository(private val loteDao: LoteDao) {
     suspend fun eliminarLote(lote: Lote) {
         loteDao.eliminar(lote)
     }
+
+    suspend fun buscarLotePorNombre(nombre: String): Lote? {
+        return loteDao.buscarLotePorNombre(nombre)
+    }
+
+
 }

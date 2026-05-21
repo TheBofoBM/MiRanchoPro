@@ -34,4 +34,9 @@ interface AnimalDao {
     // Útil para cargar un animal en la pantalla de EditarAnimal
     @Query("SELECT * FROM animales WHERE idArete = :idArete LIMIT 1")
     suspend fun obtenerAnimalPorId(idArete: String): Animal?
+
+    @Query("SELECT * FROM animales WHERE ubicacion = :nombreLote AND estado != 'Baja'")
+    fun obtenerAnimalesPorLote(nombreLote: String): Flow<List<Animal>>
+    @Query("SELECT * FROM animales WHERE ubicacion != :nombreLote AND estado != 'Baja'")
+    fun obtenerAnimalesFueraDeLote(nombreLote: String): Flow<List<Animal>>
 }

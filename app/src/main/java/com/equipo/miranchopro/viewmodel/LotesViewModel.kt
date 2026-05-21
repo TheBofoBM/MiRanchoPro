@@ -3,66 +3,60 @@ package com.equipo.miranchopro.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.equipo.miranchopro.data.model.Lote
+import com.equipo.miranchopro.data.repository.AnimalRepository
 import com.equipo.miranchopro.data.repository.LoteRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class LotesViewModel(private val repository: LoteRepository) : ViewModel() {
+class LotesViewModel(
+    private val loteRepo: LoteRepository,
+    private val animalRepo: AnimalRepository // Agregamos el repositorio de animales
+) : ViewModel() {
 
-    // Convertimos el Flow del DAO a un StateFlow para que la UI lo observe reactivamente
-    val lotes: StateFlow<List<Lote>> = repository.obtenerTodosLosLotes()
-        .stateIn(
+    // Combinamos los lotes con los animales en tiempo real para calcular la ocupación exacta
+    val lotes: StateFlow<List<Lote>> = loteRepo.obtenerTodosLosLotes()
+        .combine(animalRepo.obtenerTodos()) { listaLotes, listaAnimales ->
+            listaLotes.map { lote ->
+                val ocupacionReal = listaAnimales.count {
+                    it.ubicacion == lote.nombre && it.estado != "Baja"
+                }
+                lote.copy(ocupacionActual = ocupacionReal)
+            }
+        }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    // CU-16: Borrar lote validando ocupación
-    fun eliminarLote(lote: Lote, onResultado: (Boolean, String) -> Unit) {
-        if (lote.ocupacionActual == 0) {
-            viewModelScope.launch {
-                repository.eliminarLote(lote)
-                onResultado(true, "Lote eliminado correctamente")
-            }
-        } else {
-            onResultado(false, "No se puede eliminar: El lote aún tiene animales asignados.")
-        }
-    }
-
-    // CU-14: Lógica auxiliar para validar el movimiento de ganado
-    fun validarTraslado(loteDestino: Lote, cantidadAMover: Int): Boolean {
-        return (loteDestino.ocupacionActual + cantidadAMover) <= loteDestino.capacidadMaxima
-    }
-
-    fun guardarNuevoLote(lote: Lote) {
+    fun insertarLote(lote: Lote) {
         viewModelScope.launch {
-            repository.insertarLote(lote)
+            loteRepo.insertarLote(lote)
         }
     }
 
-    // CU-14: Mover ganado de un lote a otro
-    fun moverGanado(loteOrigen: Lote, loteDestino: Lote) {
-        viewModelScope.launch {
-            val cantidadAMover = loteOrigen.ocupacionActual
-
-            // Actualizamos la capacidad de ambos lotes
-            val loteOrigenActualizado = loteOrigen.copy(ocupacionActual = 0)
-            val loteDestinoActualizado = loteDestino.copy(ocupacionActual = loteDestino.ocupacionActual + cantidadAMover)
-
-            repository.actualizarLote(loteOrigenActualizado)
-            repository.actualizarLote(loteDestinoActualizado)
-
-            // NOTA: Aquí también deberías llamar a tu AnimalRepository para actualizar
-            // el 'idLote' de los animales correspondientes para que se refleje en la base de datos.
-        }
-    }
-
-    // Editar lote
     fun actualizarLote(lote: Lote) {
         viewModelScope.launch {
-            repository.actualizarLote(lote)
+            loteRepo.actualizarLote(lote)
         }
+    }
+
+    fun eliminarLote(lote: Lote, alTerminar: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                loteRepo.eliminarLote(lote)
+                alTerminar(true, "Lote eliminado")
+            } catch (e: Exception) {
+                alTerminar(false, e.message ?: "Error")
+            }
+        }
+    }
+
+    fun moverGanado(loteOrigen: Lote, loteDestino: Lote) {
+        // La función queda vacía ya que el traslado real,
+        // validación de espacios y selección por casillas
+        // ahora lo maneja exclusivamente DetalleLoteViewModel.
     }
 }

@@ -7,12 +7,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.repository.AnimalRepository
+import com.equipo.miranchopro.data.repository.LoteRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class RegistrarAnimalViewModel(
-    private val repositorio: AnimalRepository
+    private val repositorio: AnimalRepository, // <-- Se agregó la coma faltante
+    private val loteRepositorio: LoteRepository // <-- Importación y declaración correctas
 ) : ViewModel() {
 
     var idArete by mutableStateOf("")
@@ -20,8 +22,14 @@ class RegistrarAnimalViewModel(
     var peso by mutableStateOf("")
     var color by mutableStateOf("")
     var marcas by mutableStateOf("")
-    
+    var edad by mutableStateOf("")
+    var ubicacion by mutableStateOf("")
+
     val tiposDisponibles = listOf("Vaca", "Toro", "Becerro", "Novillo", "Vaquilla")
+
+    // Lista reactiva para alimentar el menú desplegable de la interfaz
+    var lotesDisponibles by mutableStateOf<List<String>>(emptyList())
+        private set
 
     var estaCargando by mutableStateOf(false)
         private set
@@ -35,6 +43,20 @@ class RegistrarAnimalViewModel(
     sealed class EventoUI {
         data class Exito(val mensaje: String) : EventoUI()
         data class Error(val mensaje: String) : EventoUI()
+    }
+
+    init {
+        // Al cargar la pantalla, consultamos los lotes existentes en Room
+        viewModelScope.launch {
+            loteRepositorio.obtenerTodosLosLotes().collect { lotes ->
+                lotesDisponibles = lotes.map { it.nombre }
+
+                // Si hay lotes registrados y la ubicación está vacía, preseleccionamos el primero
+                if (lotesDisponibles.isNotEmpty() && ubicacion.isBlank()) {
+                    ubicacion = lotesDisponibles[0]
+                }
+            }
+        }
     }
 
     fun registrarAnimal() {
@@ -58,18 +80,20 @@ class RegistrarAnimalViewModel(
                 tipo = tipo,
                 peso = pesoDouble,
                 color = color,
-                marcas = marcas
+                marcas = marcas,
+                edad = if (edad.isBlank()) "Desconocida" else edad,
+                ubicacion = if (ubicacion.isBlank()) "Lote A" else ubicacion
             )
-            
+
             val resultado = repositorio.registrarAnimal(nuevoAnimal)
-            
+
             estaCargando = false
-            
+
             resultado.onSuccess {
                 val msg = "Animal agregado exitosamente en la categoría $tipo"
                 limpiarCampos()
                 _eventoUI.emit(EventoUI.Exito(msg))
-            }.onFailure { exception ->
+            }.onFailure {
                 mensajeError = "Error al registrar: el arete ya existe o hubo un fallo en la base de datos"
                 _eventoUI.emit(EventoUI.Error(mensajeError!!))
             }
@@ -78,10 +102,11 @@ class RegistrarAnimalViewModel(
 
     private fun limpiarCampos() {
         idArete = ""
-        // No limpiamos el tipo por si registra varios del mismo
+        // Conservamos el 'tipo' y 'ubicacion' actuales para agilizar registros múltiples seguidos
         peso = ""
         color = ""
         marcas = ""
+        edad = ""
         mensajeError = null
     }
 }

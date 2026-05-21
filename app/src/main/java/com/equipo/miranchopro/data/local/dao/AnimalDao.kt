@@ -20,4 +20,10 @@ interface AnimalDao {
 
     @Delete
     suspend fun eliminar(animal: Animal)
+
+    @Query("SELECT * FROM animales WHERE ubicacion = :nombreLote AND estado != 'Baja'")
+    fun obtenerAnimalesPorLote(nombreLote: String): Flow<List<Animal>>
+
+    @Query("SELECT * FROM animales WHERE ubicacion != :nombreLote AND estado != 'Baja'")
+    fun obtenerAnimalesFueraDeLote(nombreLote: String): Flow<List<Animal>>
 }

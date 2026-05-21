@@ -36,4 +36,12 @@ class AnimalRepository(private val animalDao: AnimalDao) {
             false
         }
     }
+
+    fun obtenerAnimalesPorLote(nombreLote: String): Flow<List<Animal>> {
+        return animalDao.obtenerAnimalesPorLote(nombreLote)
+    }
+    fun obtenerAnimalesFueraDeLote(nombreLote: String): Flow<List<Animal>> {
+        return animalDao.obtenerAnimalesFueraDeLote(nombreLote)
+    }
+
 }

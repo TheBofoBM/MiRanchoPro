@@ -180,7 +180,7 @@ fun PantallaRegistrarLote(
                             capacidadMaxima = capacidad,
                             ocupacionActual = 0
                         )
-                        viewModel.guardarNuevoLote(nuevoLote)
+                        viewModel.insertarLote(nuevoLote)
                         onVolver()
                     }
                 },

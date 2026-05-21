@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import com.equipo.miranchopro.modelovista.DetalleLoteViewModel
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -166,6 +167,7 @@ fun NavegacionApp() {
                     onRegisterClick = { navController.navigate(Pantalla.Registro.ruta) }
                 )
             }
+
             composable(Pantalla.Registro.ruta) {
                 val registroViewModel: RegistroViewModel = viewModel { RegistroViewModel(database.usuarioDao()) }
                 RegistroScreen(
@@ -195,7 +197,7 @@ fun NavegacionApp() {
                 )
             }
             composable(Pantalla.RegistrarAnimal.ruta) {
-                val regViewModel: RegistrarAnimalViewModel = viewModel { RegistrarAnimalViewModel(repoAnimales) }
+                val regViewModel: RegistrarAnimalViewModel = viewModel { RegistrarAnimalViewModel(repoAnimales, repoLotes) }
                 PantallaRegistrarAnimal(viewModel = regViewModel, alFinalizar = { navController.popBackStack() })
             }
             composable(
@@ -203,13 +205,13 @@ fun NavegacionApp() {
                 arguments = listOf(navArgument("idArete") { type = NavType.StringType })
             ) { entrada ->
                 val idArete = entrada.arguments?.getString("idArete") ?: ""
-                val editViewModel: EditarAnimalViewModel = viewModel { EditarAnimalViewModel(repoAnimales) }
+                val editViewModel: EditarAnimalViewModel = viewModel { EditarAnimalViewModel(repoAnimales, repoLotes) }
                 PantallaEditarAnimal(idArete = idArete, viewModel = editViewModel, alVolver = { navController.popBackStack() })
             }
 
             // MÓDULO DE LOTES
             composable(Pantalla.Lotes.ruta) {
-                val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
+                val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes, repoAnimales) }
                 PantallaLotes(
                     viewModel = lotesViewModel,
                     onAgregarLote = {
@@ -222,38 +224,53 @@ fun NavegacionApp() {
             }
 
             composable(Pantalla.RegistrarLote.ruta) {
-                val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
+                val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes, repoAnimales) }
                 PantallaRegistrarLote(
                     viewModel = lotesViewModel,
                     onVolver = { navController.popBackStack() }
                 )
             }
 
-            // DETALLE DEL LOTE
+            // DETALLE DEL LOTE (Implementación limpia)
             composable(
                 route = Pantalla.DetalleLote.ruta,
                 arguments = listOf(navArgument("idLote") { type = NavType.IntType })
             ) { entrada ->
                 val idLote = entrada.arguments?.getInt("idLote") ?: 0
-                val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
 
-                // Observamos la lista y filtramos el lote seleccionado
+                // 1. Instanciamos el ViewModel que maneja la lógica de detalle
+                val detalleLoteViewModel: DetalleLoteViewModel = viewModel {
+                    DetalleLoteViewModel(repoAnimales, repoLotes)
+                }
+
+                // 2. Instanciamos el ViewModel de Lotes para obtener la lista general y el lote específico
+                val lotesViewModel: LotesViewModel = viewModel {LotesViewModel(repoLotes, repoAnimales) }
+
+                // Observamos los datos
                 val lotes by lotesViewModel.lotes.collectAsState()
+                val animalesEnLote by detalleLoteViewModel.animalesEnLote.collectAsState()
+                val todosLosLotes by lotesViewModel.lotes.collectAsState()
+
+                // Buscamos el lote actual
                 val loteSeleccionado = lotes.find { it.id == idLote }
 
-                // Pendiente: Filtrar animales por idLote usando tu AnimalViewModel o repositorio
-                val animalesEnLote = emptyList<Animal>()
+                // 3. Cargamos los datos del lote cuando el lote sea encontrado
+                LaunchedEffect(loteSeleccionado) {
+                    loteSeleccionado?.let {
+                        detalleLoteViewModel.cargarDatosLote(it.nombre)
+                    }
+                }
 
+                // 4. Renderizamos la pantalla solo si el lote existe
                 if (loteSeleccionado != null) {
                     PantallaDetalleLote(
                         lote = loteSeleccionado,
                         animalesEnLote = animalesEnLote,
-                        todosLosLotes = lotes,
-                        viewModel = lotesViewModel,
+                        todosLosLotes = todosLosLotes,
+                        viewModel = detalleLoteViewModel, // <-- CORRECCIÓN: Se pasa lotesViewModel para que coincida con la vista
                         onVolver = { navController.popBackStack() },
                         onVerAnimal = { idAnimal ->
-                            // Aquí navegamos hacia la pantalla de edición de ese animal en particular
-                            navController.navigate(Pantalla.EditarAnimal.crearRuta(idAnimal.toString()))
+                            navController.navigate(Pantalla.EditarAnimal.crearRuta(idAnimal))
                         }
                     )
                 }

@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.equipo.miranchopro.modelovista.EditarAnimalViewModel
 import kotlinx.coroutines.flow.collectLatest
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaEditarAnimal(
@@ -29,6 +28,8 @@ fun PantallaEditarAnimal(
     alVolver: () -> Unit = {}
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    var expandedLotes by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(idArete) {
         viewModel.cargarAnimal(idArete)
@@ -96,12 +97,51 @@ fun PantallaEditarAnimal(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                // Nuevo campo: Modificar Edad del animal
+                OutlinedTextField(
+                    value = viewModel.edad,
+                    onValueChange = { viewModel.edad = it },
+                    label = { Text("Edad (ej. 2 años, 6 meses)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
                 OutlinedTextField(
                     value = viewModel.color,
                     onValueChange = { viewModel.color = it },
                     label = { Text("Color") },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                ExposedDropdownMenuBox(
+                    expanded = expandedLotes,
+                    onExpandedChange = { expandedLotes = !expandedLotes },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = viewModel.ubicacion,
+                        onValueChange = {},
+                        readOnly = true, // Bloquea la escritura manual
+                        label = { Text("Asignar a Lote") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLotes) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedLotes,
+                        onDismissRequest = { expandedLotes = false }
+                    ) {
+                        // En el siguiente paso conectaremos esto con la base de datos
+                        viewModel.lotesDisponibles.forEach { nombreLote ->
+                            DropdownMenuItem(
+                                text = { Text(nombreLote) },
+                                onClick = {
+                                    viewModel.ubicacion = nombreLote
+                                    expandedLotes = false
+                                }
+                            )
+                        }
+                    }
+                }
 
                 OutlinedTextField(
                     value = viewModel.marcas,

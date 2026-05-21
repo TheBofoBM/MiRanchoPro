@@ -7,12 +7,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.repository.AnimalRepository
+import com.equipo.miranchopro.data.repository.LoteRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 class EditarAnimalViewModel(
-    private val repositorio: AnimalRepository
+    private val repositorio: AnimalRepository,
+    private val loteRepositorio: LoteRepository // <-- Inyectamos el repositorio de Lotes
 ) : ViewModel() {
 
     var idArete by mutableStateOf("")
@@ -27,13 +29,16 @@ class EditarAnimalViewModel(
     var ubicacion by mutableStateOf("")
     var estado by mutableStateOf("")
 
+    // NUEVO: Lista reactiva para el menú desplegable
+    var lotesDisponibles by mutableStateOf<List<String>>(emptyList())
+        private set
+
     var estaCargando by mutableStateOf(false)
         private set
 
     var mensajeError by mutableStateOf<String?>(null)
         private set
 
-    // Estados para el proceso de Baja
     var mostrarDialogoBaja by mutableStateOf(false)
     var motivoBaja by mutableStateOf("")
     var situacionMuerte by mutableStateOf("")
@@ -48,10 +53,18 @@ class EditarAnimalViewModel(
         data class Error(val mensaje: String) : EventoUI()
     }
 
+    init {
+        // Al abrir la pantalla de edición, cargamos los lotes existentes
+        viewModelScope.launch {
+            loteRepositorio.obtenerTodosLosLotes().collect { lotes ->
+                lotesDisponibles = lotes.map { it.nombre }
+            }
+        }
+    }
+
     fun cargarAnimal(id: String) {
         viewModelScope.launch {
             estaCargando = true
-            // Usamos el método que sí existe en tu repositorio
             val animal = repositorio.getAnimalById(id)
             if (animal != null) {
                 idArete = animal.idArete
@@ -97,7 +110,6 @@ class EditarAnimalViewModel(
                 estado = estado
             )
 
-            // Usamos updateAnimal que devuelve un Boolean
             val exito = repositorio.updateAnimal(animalActualizado)
             estaCargando = false
 
@@ -125,7 +137,6 @@ class EditarAnimalViewModel(
                     else -> "Baja por $motivoBaja"
                 }
 
-                // Generamos la copia del animal con el estado cambiado
                 val animalDeBaja = animal.copy(
                     estado = "Baja",
                     marcas = "${animal.marcas} | Detalle: $detalleBaja"
