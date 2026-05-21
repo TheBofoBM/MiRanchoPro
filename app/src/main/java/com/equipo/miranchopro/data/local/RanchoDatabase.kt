@@ -6,17 +6,24 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.equipo.miranchopro.data.local.dao.AnimalDao
 import com.equipo.miranchopro.data.local.dao.LoteDao
+import com.equipo.miranchopro.data.local.dao.SaludDao
 import com.equipo.miranchopro.data.local.dao.UsuarioDao
 import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.model.Lote
+import com.equipo.miranchopro.data.model.RegistroSalud // <-- 1. Importación añadida
 import com.equipo.miranchopro.data.model.Usuario
 
-@Database(entities = [Usuario::class, Lote::class, Animal::class], version = 3, exportSchema = false)
+@Database(
+    entities = [Usuario::class, Lote::class, Animal::class, RegistroSalud::class], // <-- 2. Entidad añadida
+    version = 6, // <-- 3. Versión actualizada para forzar la creación de la nueva tabla
+    exportSchema = false
+)
 abstract class RanchoDatabase : RoomDatabase() {
 
     abstract fun usuarioDao(): UsuarioDao
     abstract fun loteDao(): LoteDao
     abstract fun animalDao(): AnimalDao
+    abstract fun saludDao(): SaludDao
 
     companion object {
         @Volatile

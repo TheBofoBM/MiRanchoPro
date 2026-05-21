@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
-import com.equipo.miranchopro.modelovista.DetalleLoteViewModel
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,24 +22,35 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.equipo.miranchopro.data.local.RanchoDatabase
-import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.repository.AnimalRepository
+import com.equipo.miranchopro.data.repository.LoteRepository
+import com.equipo.miranchopro.data.repository.SaludRepository
+import com.equipo.miranchopro.interfaz.pantallas.salud.PantallaDetalleSalud
+
+// Imports para Inventario
+import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaEditarAnimal
+import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaInventario
+import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaRegistrarAnimal
+import com.equipo.miranchopro.modelovista.EditarAnimalViewModel
+import com.equipo.miranchopro.modelovista.InventarioViewModel
+import com.equipo.miranchopro.modelovista.RegistrarAnimalViewModel
 
 // Imports para Lotes
-import com.equipo.miranchopro.data.repository.LoteRepository
 import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaLotes
 import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaRegistrarLote
 import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaDetalleLote
 import com.equipo.miranchopro.viewmodel.LotesViewModel
+import com.equipo.miranchopro.modelovista.DetalleLoteViewModel
 
-import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaEditarAnimal
-import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaInventario
-import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaRegistrarAnimal
+// Imports para Salud
+import com.equipo.miranchopro.interfaz.pantallas.salud.PantallaSalud
+import com.equipo.miranchopro.interfaz.pantallas.salud.PantallaRegistrarSalud
+import com.equipo.miranchopro.modelovista.SaludViewModel
+import com.equipo.miranchopro.modelovista.RegistrarSaludViewModel
+
+// Imports para Auth
 import com.equipo.miranchopro.interfaz.pantallas.login.LoginScreen
 import com.equipo.miranchopro.interfaz.pantallas.registro.RegistroScreen
-import com.equipo.miranchopro.modelovista.EditarAnimalViewModel
-import com.equipo.miranchopro.modelovista.InventarioViewModel
-import com.equipo.miranchopro.modelovista.RegistrarAnimalViewModel
 import com.equipo.miranchopro.viewmodel.LoginViewModel
 import com.equipo.miranchopro.viewmodel.RegistroViewModel
 
@@ -53,10 +63,16 @@ sealed class Pantalla(val ruta: String) {
         fun crearRuta(idArete: String) = "editar_animal/$idArete"
     }
     object Inicio : Pantalla("inicio")
-    object Salud : Pantalla("salud")
-    object Lotes : Pantalla("lotes")
 
-    // Rutas para las funciones de lotes
+    // Rutas para Salud
+    object Salud : Pantalla("salud")
+    object RegistrarSalud : Pantalla("registrar_salud")
+    object DetalleSalud : Pantalla("detalle_salud/{idRegistro}") {
+        fun crearRuta(idRegistro: Int) = "detalle_salud/$idRegistro"
+    }
+
+    // Rutas para Lotes
+    object Lotes : Pantalla("lotes")
     object RegistrarLote : Pantalla("registrar_lote")
     object DetalleLote : Pantalla("detalle_lote/{idLote}") {
         fun crearRuta(idLote: Int) = "detalle_lote/$idLote"
@@ -86,8 +102,10 @@ fun NavegacionApp() {
     val context = LocalContext.current
     val database = RanchoDatabase.getDatabase(context)
 
+    // Repositorios inicializados
     val repoAnimales = AnimalRepository(database.animalDao())
     val repoLotes = LoteRepository(database.loteDao())
+    val repoSalud = SaludRepository(database.saludDao())
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -116,7 +134,8 @@ fun NavegacionApp() {
                         // Lógica para mantener seleccionado el icono correcto incluso en sub-pantallas
                         val esSeleccionado = currentDestination?.hierarchy?.any { it.route == item.ruta } == true ||
                                 (item == ItemNavegacion.Ganado && (currentDestination?.route == Pantalla.RegistrarAnimal.ruta || currentDestination?.route?.startsWith("editar_animal") == true)) ||
-                                (item == ItemNavegacion.Lotes && (currentDestination?.route == Pantalla.RegistrarLote.ruta || currentDestination?.route?.startsWith("detalle_lote") == true))
+                                (item == ItemNavegacion.Lotes && (currentDestination?.route == Pantalla.RegistrarLote.ruta || currentDestination?.route?.startsWith("detalle_lote") == true)) ||
+                                (item == ItemNavegacion.Medico && currentDestination?.route == Pantalla.RegistrarSalud.ruta)
 
                         NavigationBarItem(
                             icon = {
@@ -183,11 +202,10 @@ fun NavegacionApp() {
 
             // PRINCIPALES
             composable(Pantalla.Inicio.ruta) { PantallaEnConstruccion("Inicio") }
-            composable(Pantalla.Salud.ruta) { PantallaEnConstruccion("Médico") }
             composable(Pantalla.Tareas.ruta) { PantallaEnConstruccion("Tareas") }
             composable(Pantalla.Reportes.ruta) { PantallaEnConstruccion("Reportes") }
 
-            // INVENTARIO
+            // ─── MÓDULO DE INVENTARIO ───
             composable(Pantalla.Inventario.ruta) {
                 val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
                 PantallaInventario(
@@ -209,7 +227,41 @@ fun NavegacionApp() {
                 PantallaEditarAnimal(idArete = idArete, viewModel = editViewModel, alVolver = { navController.popBackStack() })
             }
 
-            // MÓDULO DE LOTES
+// ─── MÓDULO DE SALUD ───
+            composable(Pantalla.Salud.ruta) {
+                val saludViewModel: SaludViewModel = viewModel { SaludViewModel(repoSalud, repoAnimales) }
+                PantallaSalud(
+                    viewModel = saludViewModel,
+                    onNuevoRegistro = { navController.navigate(Pantalla.RegistrarSalud.ruta) },
+                    onVerDetalleTratamiento = { idRegistro ->
+                        // Ahora navegamos al detalle del tratamiento
+                        navController.navigate(Pantalla.DetalleSalud.crearRuta(idRegistro))
+                    }
+                )
+            }
+            composable(Pantalla.RegistrarSalud.ruta) {
+                val registrarSaludViewModel: RegistrarSaludViewModel = viewModel { RegistrarSaludViewModel(repoSalud, repoAnimales) }
+                PantallaRegistrarSalud(
+                    viewModel = registrarSaludViewModel,
+                    onVolver = { navController.popBackStack() }
+                )
+            }
+            // Agregamos la nueva pantalla al NavHost
+            composable(
+                route = Pantalla.DetalleSalud.ruta,
+                arguments = listOf(navArgument("idRegistro") { type = NavType.IntType })
+            ) { entrada ->
+                val idRegistro = entrada.arguments?.getInt("idRegistro") ?: 0
+                val saludViewModel: SaludViewModel = viewModel { SaludViewModel(repoSalud, repoAnimales) }
+
+                PantallaDetalleSalud(
+                    idRegistro = idRegistro,
+                    viewModel = saludViewModel,
+                    onVolver = { navController.popBackStack() }
+                )
+            }
+
+            // ─── MÓDULO DE LOTES ───
             composable(Pantalla.Lotes.ruta) {
                 val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes, repoAnimales) }
                 PantallaLotes(
@@ -231,43 +283,36 @@ fun NavegacionApp() {
                 )
             }
 
-            // DETALLE DEL LOTE (Implementación limpia)
             composable(
                 route = Pantalla.DetalleLote.ruta,
                 arguments = listOf(navArgument("idLote") { type = NavType.IntType })
             ) { entrada ->
                 val idLote = entrada.arguments?.getInt("idLote") ?: 0
 
-                // 1. Instanciamos el ViewModel que maneja la lógica de detalle
                 val detalleLoteViewModel: DetalleLoteViewModel = viewModel {
                     DetalleLoteViewModel(repoAnimales, repoLotes)
                 }
 
-                // 2. Instanciamos el ViewModel de Lotes para obtener la lista general y el lote específico
                 val lotesViewModel: LotesViewModel = viewModel {LotesViewModel(repoLotes, repoAnimales) }
 
-                // Observamos los datos
                 val lotes by lotesViewModel.lotes.collectAsState()
                 val animalesEnLote by detalleLoteViewModel.animalesEnLote.collectAsState()
                 val todosLosLotes by lotesViewModel.lotes.collectAsState()
 
-                // Buscamos el lote actual
                 val loteSeleccionado = lotes.find { it.id == idLote }
 
-                // 3. Cargamos los datos del lote cuando el lote sea encontrado
                 LaunchedEffect(loteSeleccionado) {
                     loteSeleccionado?.let {
                         detalleLoteViewModel.cargarDatosLote(it.nombre)
                     }
                 }
 
-                // 4. Renderizamos la pantalla solo si el lote existe
                 if (loteSeleccionado != null) {
                     PantallaDetalleLote(
                         lote = loteSeleccionado,
                         animalesEnLote = animalesEnLote,
                         todosLosLotes = todosLosLotes,
-                        viewModel = detalleLoteViewModel, // <-- CORRECCIÓN: Se pasa lotesViewModel para que coincida con la vista
+                        viewModel = detalleLoteViewModel,
                         onVolver = { navController.popBackStack() },
                         onVerAnimal = { idAnimal ->
                             navController.navigate(Pantalla.EditarAnimal.crearRuta(idAnimal))
