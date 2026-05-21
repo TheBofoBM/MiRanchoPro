@@ -7,12 +7,12 @@ import androidx.room.PrimaryKey
 data class Animal(
     @PrimaryKey
     val idArete: String,
-    val tipo: String = "Vaca",
-    val raza: String = "Serrana",
-    val edad: String = "Desconocida",
     val peso: Double,
     val color: String,
     val marcas: String,
+    val tipo: String = "Vaca",
+    val raza: String = "Serrana",
+    val edad: String = "Desconocida",
     val ubicacion: String = "Lote A",
     val estado: String = "Sano"
 )

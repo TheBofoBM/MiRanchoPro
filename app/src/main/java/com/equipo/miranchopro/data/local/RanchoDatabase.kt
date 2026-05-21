@@ -29,8 +29,8 @@ abstract class RanchoDatabase : RoomDatabase() {
                     RanchoDatabase::class.java,
                     "rancho_database"
                 )
-                .fallbackToDestructiveMigration()
-                .build()
+                    .fallbackToDestructiveMigration() // Útil para no crashear al cambiar versiones en desarrollo
+                    .build()
                 INSTANCE = instance
                 instance
             }

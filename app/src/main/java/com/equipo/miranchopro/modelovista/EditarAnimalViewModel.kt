@@ -51,6 +51,7 @@ class EditarAnimalViewModel(
     fun cargarAnimal(id: String) {
         viewModelScope.launch {
             estaCargando = true
+            // Usamos el método que sí existe en tu repositorio
             val animal = repositorio.getAnimalById(id)
             if (animal != null) {
                 idArete = animal.idArete
@@ -62,6 +63,8 @@ class EditarAnimalViewModel(
                 edad = animal.edad
                 ubicacion = animal.ubicacion
                 estado = animal.estado
+            } else {
+                mensajeError = "No se encontró el animal en la base de datos."
             }
             estaCargando = false
         }
@@ -93,31 +96,24 @@ class EditarAnimalViewModel(
                 ubicacion = ubicacion,
                 estado = estado
             )
+
+            // Usamos updateAnimal que devuelve un Boolean
             val exito = repositorio.updateAnimal(animalActualizado)
             estaCargando = false
+
             if (exito) {
                 _eventoUI.emit(EventoUI.Exito)
             } else {
-                _eventoUI.emit(EventoUI.Error("Error al actualizar el animal"))
+                _eventoUI.emit(EventoUI.Error("Error al actualizar el animal en la base de datos"))
             }
         }
     }
 
     fun confirmarBaja() {
         if (motivoBaja.isBlank()) return
-        
+
         viewModelScope.launch {
             estaCargando = true
-            
-            // CP-06.2: Simulación de validación de tareas/tratamientos pendientes
-            // En el futuro, aquí consultaríamos al repositorio médico
-            val tieneTratamientosActivos = false 
-            
-            if (tieneTratamientosActivos) {
-                _eventoUI.emit(EventoUI.Error("No se puede dar de baja: El animal tiene tratamientos médicos activos."))
-                estaCargando = false
-                return@launch
-            }
 
             val animal = repositorio.getAnimalById(idArete)
             if (animal != null) {
@@ -129,20 +125,24 @@ class EditarAnimalViewModel(
                     else -> "Baja por $motivoBaja"
                 }
 
-                // Actualizamos el estado a "Baja"
+                // Generamos la copia del animal con el estado cambiado
                 val animalDeBaja = animal.copy(
                     estado = "Baja",
                     marcas = "${animal.marcas} | Detalle: $detalleBaja"
                 )
-                
+
                 val exito = repositorio.updateAnimal(animalDeBaja)
                 estaCargando = false
+
                 if (exito) {
                     mostrarDialogoBaja = false
                     _eventoUI.emit(EventoUI.BajaExitosa)
                 } else {
                     _eventoUI.emit(EventoUI.Error("Error al procesar la baja"))
                 }
+            } else {
+                estaCargando = false
+                _eventoUI.emit(EventoUI.Error("Error: No se encontró el registro del animal."))
             }
         }
     }

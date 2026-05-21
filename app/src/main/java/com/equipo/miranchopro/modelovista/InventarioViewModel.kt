@@ -36,6 +36,7 @@ class InventarioViewModel(
     private fun observarAnimales() {
         viewModelScope.launch {
             estaCargando = true
+            // Usamos tu método obtenerTodos() que devuelve el Flow desde Room
             repositorio.obtenerTodos().collect { lista ->
                 listaAnimales = lista
                 estaCargando = false
@@ -64,13 +65,13 @@ class InventarioViewModel(
             } else {
                 listaAnimales.filter { it.estado != "Baja" }
             }
-            
+
             return if (busqueda.isBlank()) {
                 base
             } else {
                 base.filter {
                     it.idArete.contains(busqueda, ignoreCase = true) ||
-                    it.raza.contains(busqueda, ignoreCase = true)
+                            it.raza.contains(busqueda, ignoreCase = true)
                 }
             }
         }
@@ -78,11 +79,13 @@ class InventarioViewModel(
     fun seleccionarCategoria(categoria: String) {
         categoriaSeleccionada = categoria
         vistaActual = VistaInventario.DETALLE_CATEGORIA
+        busqueda = ""
     }
 
     fun verBajas() {
         vistaActual = VistaInventario.DADOS_DE_BAJA
         categoriaSeleccionada = null
+        busqueda = ""
     }
 
     fun volverACategorias() {
