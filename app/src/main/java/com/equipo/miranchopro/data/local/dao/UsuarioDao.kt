@@ -1,10 +1,8 @@
 package com.equipo.miranchopro.data.local.dao
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import com.equipo.miranchopro.data.model.Usuario
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UsuarioDao {
@@ -16,4 +14,13 @@ interface UsuarioDao {
 
     @Query("SELECT * FROM usuarios WHERE correo = :correo")
     suspend fun buscarPorCorreo(correo: String): Usuario?
+
+    @Query("SELECT * FROM usuarios WHERE rol = 'TRABAJADOR'")
+    fun obtenerTrabajadores(): Flow<List<Usuario>>
+
+    @Delete
+    suspend fun eliminarUsuario(usuario: Usuario)
+
+    @Update
+    suspend fun actualizarUsuario(usuario: Usuario)
 }

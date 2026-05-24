@@ -12,8 +12,16 @@ class MedicamentoViewModel : ViewModel() {
     )
     val listaMedicamentos: List<Medicamento> get() = _listaMedicamentos
 
+    fun existeNombre(nombre: String, idAExcluir: String? = null): Boolean {
+        return _listaMedicamentos.any { 
+            it.nombre.equals(nombre, ignoreCase = true) && it.id != idAExcluir 
+        }
+    }
+
     fun agregarMedicamento(medicamento: Medicamento) {
-        _listaMedicamentos.add(medicamento)
+        if (!existeNombre(medicamento.nombre)) {
+            _listaMedicamentos.add(medicamento)
+        }
     }
 
     fun editarMedicamento(medicamento: Medicamento) {

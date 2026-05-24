@@ -18,6 +18,7 @@ import com.equipo.miranchopro.data.model.Medicamento
 @Composable
 fun DialogoMedicamento(
     medicamentoExistente: Medicamento? = null,
+    validarNombre: (String, String?) -> Boolean = { _, _ -> false },
     onDismiss: () -> Unit,
     onConfirm: (Medicamento) -> Unit
 ) {
@@ -26,6 +27,8 @@ fun DialogoMedicamento(
     var stock by remember { mutableStateOf(medicamentoExistente?.stock?.toString() ?: "") }
     var unidadMedida by remember { mutableStateOf(medicamentoExistente?.unidadMedida ?: "") }
     var descripcion by remember { mutableStateOf(medicamentoExistente?.descripcion ?: "") }
+    
+    var errorNombre by remember { mutableStateOf<String?>(null) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(16.dp), color = Color.White) {
@@ -42,10 +45,19 @@ fun DialogoMedicamento(
                 
                 OutlinedTextField(
                     value = nombre,
-                    onValueChange = { nombre = it },
+                    onValueChange = { 
+                        nombre = it
+                        errorNombre = null 
+                    },
                     label = { Text("Nombre del medicamento") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    isError = errorNombre != null,
+                    supportingText = {
+                        if (errorNombre != null) {
+                            Text(text = errorNombre!!, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -91,16 +103,20 @@ fun DialogoMedicamento(
                 Button(
                     onClick = {
                         if (nombre.isNotBlank() && stock.isNotBlank()) {
-                            onConfirm(
-                                Medicamento(
-                                    id = medicamentoExistente?.id ?: java.util.UUID.randomUUID().toString(),
-                                    nombre = nombre,
-                                    dosis = dosis,
-                                    stock = stock.toIntOrNull() ?: 0,
-                                    unidadMedida = unidadMedida,
-                                    descripcion = descripcion
+                            if (validarNombre(nombre, medicamentoExistente?.id)) {
+                                errorNombre = "Este medicamento ya existe"
+                            } else {
+                                onConfirm(
+                                    Medicamento(
+                                        id = medicamentoExistente?.id ?: java.util.UUID.randomUUID().toString(),
+                                        nombre = nombre,
+                                        dosis = dosis,
+                                        stock = stock.toIntOrNull() ?: 0,
+                                        unidadMedida = unidadMedida,
+                                        descripcion = descripcion
+                                    )
                                 )
-                            )
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth().padding(top = 24.dp),

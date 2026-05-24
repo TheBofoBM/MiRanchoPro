@@ -19,8 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.modelovista.InventarioViewModel
 import com.equipo.miranchopro.modelovista.VistaInventario
@@ -344,7 +342,7 @@ fun TarjetaAnimalLujo(
                 if (animal.estado == "Pendiente") {
                     IconButton(onClick = onCancelar) {
                         Icon(
-                            imageVector = Icons.Outlined.DeleteOutline, 
+                            imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "Cancelar registro", 
                             tint = Color.Red
                         )

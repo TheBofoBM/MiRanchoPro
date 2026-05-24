@@ -1,5 +1,6 @@
 package com.equipo.miranchopro.interfaz.pantallas.reportes
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,7 +17,6 @@ import com.equipo.miranchopro.viewmodel.ReporteViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaReportes(viewModel: ReporteViewModel) {
     val reporte by viewModel.reporte.collectAsState()
@@ -26,78 +26,113 @@ fun PantallaReportes(viewModel: ReporteViewModel) {
         viewModel.cargarReporte()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Reporte de Inventario", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF008577))
-            )
-        }
-    ) { padding ->
-        if (cargando) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFF008577))
-            }
-        } else {
-            reporte?.let { datos ->
-                LazyColumn(
+    Scaffold { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF8F9FA))
+                .padding(bottom = padding.calculateBottomPadding())
+        ) {
+            Surface(
+                color = Color.Black,
+                shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .statusBarsPadding()
+                        .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 40.dp)
+                        .fillMaxWidth()
                 ) {
-                    item {
-                        Text("Resumen General", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text("Generado el: ${datos.fechaGeneracion}", fontSize = 12.sp, color = Color.Gray)
-                    }
+                    Text(
+                        text = "Reportes",
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        letterSpacing = (-1.5).sp,
+                        lineHeight = 52.sp
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Text(
+                        text = "Estado general del rancho",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF00BFA5)
+                    )
+                }
+            }
 
-                    item {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TarjetaEstadistica("Total Animales", datos.totalAnimales.toString(), Modifier.weight(1f))
-                            TarjetaEstadistica("Peso Promedio", "${String.format("%.1f", datos.pesoPromedio)} kg", Modifier.weight(1f))
+            if (cargando) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF008577))
+                }
+            } else {
+                reporte?.let { datos ->
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            Text("RESUMEN DE INVENTARIO", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 2.sp)
                         }
-                    }
 
-                    item {
-                        Text("Distribución por Raza", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
-                        ) {
-                            Column(Modifier.padding(16.dp)) {
-                                datos.conteoPorRaza.forEach { (raza, cantidad) ->
-                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text(raza)
-                                        Text(cantidad.toString(), fontWeight = FontWeight.Bold)
+                        item {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                TarjetaEstadisticaLujo("Total Animales", datos.totalAnimales.toString(), Modifier.weight(1f))
+                                TarjetaEstadisticaLujo("Peso Promedio", "${String.format("%.1f", datos.pesoPromedio)} kg", Modifier.weight(1f))
+                            }
+                        }
+
+                        item {
+                            Text("DISTRIBUCIÓN POR RAZA", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 2.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(2.dp)
+                            ) {
+                                Column(Modifier.padding(20.dp)) {
+                                    datos.conteoPorRaza.forEach { (raza, cantidad) ->
+                                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text(raza, fontWeight = FontWeight.Medium)
+                                            Text(cantidad.toString(), fontWeight = FontWeight.Bold, color = Color(0xFF008577))
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    item {
-                        Text("Últimos Animales Agregados", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
+                        item {
+                            Text("REGISTROS RECIENTES", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 2.sp)
+                        }
 
-                    items(datos.animalesRecientes.take(10)) { animal ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
-                                Modifier.padding(12.dp).fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                        items(datos.animalesRecientes.take(5)) { animal ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(1.dp)
                             ) {
-                                Column {
-                                    Text("Arete: ${animal.idArete}", fontWeight = FontWeight.Bold)
-                                    Text(animal.raza, fontSize = 14.sp)
-                                }
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text("${animal.peso} kg", color = Color(0xFF008577), fontWeight = FontWeight.Bold)
-                                    val fecha = SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(animal.fechaRegistro))
-                                    Text(fecha, fontSize = 12.sp, color = Color.Gray)
+                                Row(
+                                    Modifier.padding(16.dp).fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text("#${animal.idArete}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                        Text(animal.raza, color = Color.Gray, fontSize = 14.sp)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("${animal.peso} kg", color = Color(0xFF008577), fontWeight = FontWeight.Bold)
+                                        val fecha = SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(animal.fechaRegistro))
+                                        Text(fecha, fontSize = 12.sp, color = Color.LightGray)
+                                    }
                                 }
                             }
                         }
@@ -109,14 +144,17 @@ fun PantallaReportes(viewModel: ReporteViewModel) {
 }
 
 @Composable
-fun TarjetaEstadistica(titulo: String, valor: String, modifier: Modifier = Modifier) {
+fun TarjetaEstadisticaLujo(titulo: String, valor: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        elevation = CardDefaults.cardElevation(4.dp)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(titulo, fontSize = 12.sp, color = Color.Gray)
-            Text(valor, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF008577))
+        Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.Start) {
+            Text(titulo, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(valor, fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color.Black)
         }
     }
 }
