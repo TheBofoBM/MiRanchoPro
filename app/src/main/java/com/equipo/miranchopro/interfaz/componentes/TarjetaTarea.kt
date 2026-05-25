@@ -1,4 +1,4 @@
-package com.example.miranchopro.ui.componentes
+package com.equipo.miranchopro.interfaz.componentes
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

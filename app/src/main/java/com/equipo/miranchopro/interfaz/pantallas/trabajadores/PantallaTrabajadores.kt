@@ -1,4 +1,4 @@
-package com.equipo.miranchopro.interfaz.pantallas.tareas
+package com.equipo.miranchopro.interfaz.pantallas.trabajadores
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,53 +14,40 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.equipo.miranchopro.data.local.RanchoDatabase
-import com.equipo.miranchopro.data.model.Tarea
-import com.equipo.miranchopro.modelovista.TareasViewModel
-import com.equipo.miranchopro.viewmodel.TrabajadoresViewModel
-import com.equipo.miranchopro.interfaz.componentes.DialogoAsignarTarea
-import com.equipo.miranchopro.interfaz.componentes.TarjetaTarea
+import com.equipo.miranchopro.data.model.Usuario
+import com.equipo.miranchopro.interfaz.componentes.DialogoTrabajador
 import com.equipo.miranchopro.interfaz.navegacion.Pantalla
+import com.equipo.miranchopro.viewmodel.TrabajadoresViewModel
 
 @Composable
-fun PantallaTareas(
+fun PantallaTrabajadores(
     navController: NavController,
-    tareasViewModel: TareasViewModel = viewModel(),
-    trabajadoresViewModel: TrabajadoresViewModel = run {
-        val context = LocalContext.current.applicationContext
-        viewModel {
-            TrabajadoresViewModel(RanchoDatabase.getDatabase(context).usuarioDao())
-        }
-    }
+    viewModel: TrabajadoresViewModel
 ) {
-    val listaTareas = tareasViewModel.listaTareas
-    val listaTrabajadores by trabajadoresViewModel.listaTrabajadores.collectAsState()
+    val trabajadores by viewModel.listaTrabajadores.collectAsState()
     var mostrarDialogo by remember { mutableStateOf(false) }
-    var tareaAEditar by remember { mutableStateOf<Tarea?>(null) }
+    var trabajadorAEditar by remember { mutableStateOf<Usuario?>(null) }
     var menuExpandido by remember { mutableStateOf(false) }
 
     if (mostrarDialogo) {
-        DialogoAsignarTarea(
-            tareaExistente = tareaAEditar,
-            listaTrabajadores = listaTrabajadores.map { it.correo },
-            onDismiss = {
+        DialogoTrabajador(
+            trabajadorExistente = trabajadorAEditar,
+            onDismiss = { 
                 mostrarDialogo = false
-                tareaAEditar = null
+                trabajadorAEditar = null
             },
-            onConfirm = { nuevaTarea: Tarea ->
-                if (tareaAEditar != null) {
-                    tareasViewModel.editarTarea(nuevaTarea)
+            onConfirm = { correo, contrasena ->
+                if (trabajadorAEditar != null) {
+                    viewModel.actualizarTrabajador(trabajadorAEditar!!.copy(contrasena = contrasena))
                 } else {
-                    tareasViewModel.agregarTarea(nuevaTarea)
+                    viewModel.agregarTrabajador(correo, contrasena)
                 }
                 mostrarDialogo = false
-                tareaAEditar = null
+                trabajadorAEditar = null
             }
         )
     }
@@ -69,20 +56,18 @@ fun PantallaTareas(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { 
-                    tareaAEditar = null
+                    trabajadorAEditar = null
                     mostrarDialogo = true 
                 },
                 containerColor = Color(0xFF008577),
                 contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier.size(72.dp).padding(8.dp)
-            ) { Icon(Icons.Default.Add, contentDescription = "Añadir", modifier = Modifier.size(36.dp)) }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Alta", modifier = Modifier.size(36.dp))
+            }
         }
     ) { padding ->
-        val hoy = listaTareas.filter { it.fecha.isNullOrEmpty() }
-        val proximas = listaTareas.filter { !it.fecha.isNullOrEmpty() }
-        val hechas = hoy.count { it.estaHecha }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -104,14 +89,14 @@ fun PantallaTareas(
                 ) {
                     Column {
                         Text(
-                            text = "Tareas",
+                            text = "Equipo",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White,
                             letterSpacing = (-1).sp
                         )
                         Text(
-                            text = "${hoy.size} asignadas para hoy",
+                            text = "${trabajadores.size} trabajadores activos",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF00BFA5)
@@ -162,63 +147,34 @@ fun PantallaTareas(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 20.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
+                contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
-                        CajaResumen("${hoy.size}", "Total", Modifier.weight(1f))
-                        CajaResumen("$hechas", "Hechas", Modifier.weight(1f), Color(0xFF00897B))
-                        CajaResumen("${hoy.size - hechas}", "Pendientes", Modifier.weight(1f), Color(0xFFEF6C00))
-                    }
-
-                    Text("Hoy", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    
-                    if (hoy.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "Hoy no tienes tareas asignadas",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-                }
-
-                items(hoy, key = { it.id }) { tarea ->
-                    TarjetaTarea(
-                        tarea = tarea,
-                        onTareaClick = { seleccionada ->
-                            tareaAEditar = seleccionada
-                            mostrarDialogo = true
-                        },
-                        onToggleCompletada = {
-                            tareasViewModel.toggleTareaCompletada(tarea)
-                        },
-                        onEliminar = { tareasViewModel.eliminarTarea(tarea) }
+                    Text(
+                        text = "PERSONAL DEL RANCHO",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.Gray,
+                        letterSpacing = 2.sp
                     )
                 }
 
-                if (proximas.isNotEmpty()) {
+                if (trabajadores.isEmpty()) {
                     item {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text("Próximas tareas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+                            Text("No hay trabajadores registrados", color = Color.Gray)
+                        }
                     }
-                    items(proximas, key = { it.id }) { tarea ->
-                        TarjetaTarea(
-                            tarea = tarea,
-                            onTareaClick = { seleccionada ->
-                                tareaAEditar = seleccionada
+                } else {
+                    items(trabajadores, key = { it.correo }) { trabajador ->
+                        TarjetaTrabajadorLujo(
+                            trabajador = trabajador,
+                            onEdit = {
+                                trabajadorAEditar = trabajador
                                 mostrarDialogo = true
                             },
-                            onToggleCompletada = {
-                                tareasViewModel.toggleTareaCompletada(tarea)
-                            },
-                            onEliminar = { tareasViewModel.eliminarTarea(tarea) }
+                            onDelete = { viewModel.darDeBajaTrabajador(trabajador) }
                         )
                     }
                 }
@@ -228,16 +184,56 @@ fun PantallaTareas(
 }
 
 @Composable
-fun CajaResumen(numero: String, etiqueta: String, modifier: Modifier, colorNumero: Color = Color.Black) {
+fun TarjetaTrabajadorLujo(
+    trabajador: Usuario,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     Card(
-        modifier = modifier.padding(4.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(numero, style = MaterialTheme.typography.headlineMedium, color = colorNumero, fontWeight = FontWeight.Bold)
-            Text(etiqueta, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Row(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(Color(0xFF008577).copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF008577), modifier = Modifier.size(28.dp))
+            }
+            
+            Spacer(modifier = Modifier.width(20.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = trabajador.correo,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Text(
+                    text = trabajador.rol,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            }
+
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color(0xFF008577))
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFE53935))
+                }
+            }
         }
     }
 }

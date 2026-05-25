@@ -4,10 +4,14 @@ import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.widget.Toast
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -26,31 +30,29 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.equipo.miranchopro.data.local.RanchoDatabase
-import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.repository.AnimalRepository
 import com.equipo.miranchopro.data.repository.LoteRepository
+import com.equipo.miranchopro.data.repository.SaludRepository
 import com.equipo.miranchopro.domain.usecase.GenerarReporteUseCase
 import com.equipo.miranchopro.interfaz.componentes.ShakeOverlay
+import com.equipo.miranchopro.interfaz.pantallas.inicio.PantallaInicio
 import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaEditarAnimal
 import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaInventario
 import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaRegistrarAnimal
 import com.equipo.miranchopro.interfaz.pantallas.login.LoginScreen
-import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaDetalleLote
 import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaLotes
+import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaDetalleLote
 import com.equipo.miranchopro.interfaz.pantallas.lotes.PantallaRegistrarLote
 import com.equipo.miranchopro.interfaz.pantallas.registro.RegistroScreen
 import com.equipo.miranchopro.interfaz.pantallas.reportes.PantallaReportes
 import com.equipo.miranchopro.interfaz.pantallas.salud.PantallaSalud
 import com.equipo.miranchopro.interfaz.pantallas.tareas.PantallaTareas
-import com.equipo.miranchopro.modelovista.EditarAnimalViewModel
-import com.equipo.miranchopro.modelovista.InventarioViewModel
-import com.equipo.miranchopro.modelovista.MedicamentoViewModel
-import com.equipo.miranchopro.modelovista.RegistrarAnimalViewModel
+import com.equipo.miranchopro.interfaz.pantallas.trabajadores.PantallaTrabajadores
+import com.equipo.miranchopro.interfaz.pantallas.perfil.PantallaPerfil
+import com.equipo.miranchopro.interfaz.pantallas.configuracion.PantallaConfiguracion
+import com.equipo.miranchopro.modelovista.*
 import com.equipo.miranchopro.utils.ShakeDetector
-import com.equipo.miranchopro.viewmodel.LoginViewModel
-import com.equipo.miranchopro.viewmodel.LotesViewModel
-import com.equipo.miranchopro.viewmodel.RegistroViewModel
-import com.equipo.miranchopro.viewmodel.ReporteViewModel
+import com.equipo.miranchopro.viewmodel.*
 import kotlinx.coroutines.launch
 
 sealed class Pantalla(val ruta: String) {
@@ -73,15 +75,15 @@ sealed class Pantalla(val ruta: String) {
     object Inicio : Pantalla("inicio")
     object Salud : Pantalla("salud")
     object Lotes : Pantalla("lotes")
-
-    // Rutas para las funciones de lotes
     object RegistrarLote : Pantalla("registrar_lote")
     object DetalleLote : Pantalla("detalle_lote/{idLote}") {
         fun crearRuta(idLote: Int) = "detalle_lote/$idLote"
     }
-
     object Tareas : Pantalla("tareas")
     object Reportes : Pantalla("reportes")
+    object Trabajadores : Pantalla("trabajadores")
+    object Perfil : Pantalla("perfil")
+    object Configuracion : Pantalla("configuracion")
 }
 
 sealed class ItemNavegacion(
@@ -92,10 +94,10 @@ sealed class ItemNavegacion(
 ) {
     object Inicio : ItemNavegacion(Pantalla.Inicio.ruta, "Inicio", Icons.Outlined.Home, Icons.Filled.Home)
     object Ganado : ItemNavegacion(Pantalla.Inventario.ruta, "Ganado", Icons.Outlined.Agriculture, Icons.Filled.Agriculture)
-    object Medico : ItemNavegacion(Pantalla.Salud.ruta, "Médico", Icons.Outlined.FavoriteBorder, Icons.Filled.Favorite)
-    object Lotes : ItemNavegacion(Pantalla.Lotes.ruta, "Lotes", Icons.Outlined.GridView, Icons.Filled.GridView)
-    object Tareas : ItemNavegacion(Pantalla.Tareas.ruta, "Tareas", Icons.Outlined.Assignment, Icons.Filled.Assignment)
+    object Medico : ItemNavegacion(Pantalla.Salud.ruta, "Médico", Icons.Outlined.MedicalServices, Icons.Filled.MedicalServices)
+    object Tareas : ItemNavegacion(Pantalla.Tareas.ruta, "Tareas", Icons.AutoMirrored.Outlined.ListAlt, Icons.AutoMirrored.Filled.ListAlt)
     object Reportes : ItemNavegacion(Pantalla.Reportes.ruta, "Reportes", Icons.Outlined.Assessment, Icons.Filled.Assessment)
+    object Equipo : ItemNavegacion(Pantalla.Trabajadores.ruta, "Equipo", Icons.Outlined.People, Icons.Filled.People)
 }
 
 @Composable
@@ -107,6 +109,7 @@ fun NavegacionApp() {
     val database = remember { RanchoDatabase.getDatabase(context) }
     val repoAnimales = remember { AnimalRepository(database.animalDao()) }
     val repoLotes = remember { LoteRepository(database.loteDao()) }
+    val repoSalud = remember { SaludRepository(database.medicamentoDao(), database.vacunacionDao(), database.enfermedadDao()) }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -137,24 +140,23 @@ fun NavegacionApp() {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
                 if (mostrarBarra) {
                     NavigationBar(
                         containerColor = Color.White,
-                        tonalElevation = 0.dp
+                        tonalElevation = 8.dp
                     ) {
                         val items = listOf(
                             ItemNavegacion.Inicio,
                             ItemNavegacion.Ganado,
                             ItemNavegacion.Medico,
-                            ItemNavegacion.Lotes,
                             ItemNavegacion.Tareas,
-                            ItemNavegacion.Reportes
+                            ItemNavegacion.Reportes,
+                            ItemNavegacion.Equipo
                         )
                         items.forEach { item ->
-                            val esSeleccionado = currentDestination?.hierarchy?.any { it.route == item.ruta } == true ||
-                                    (item == ItemNavegacion.Ganado && (currentDestination?.route == Pantalla.RegistrarAnimal.ruta || currentDestination?.route?.startsWith("editar_animal") == true)) ||
-                                    (item == ItemNavegacion.Lotes && (currentDestination?.route == Pantalla.RegistrarLote.ruta || currentDestination?.route?.startsWith("detalle_lote") == true))
+                            val esSeleccionado = currentDestination?.hierarchy?.any { it.route == item.ruta } == true
 
                             NavigationBarItem(
                                 icon = {
@@ -177,9 +179,7 @@ fun NavegacionApp() {
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Color(0xFF008577),
                                     selectedTextColor = Color(0xFF008577),
-                                    indicatorColor = Color(0xFFE0F2F1),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray
+                                    indicatorColor = Color(0xFFE0F2F1)
                                 )
                             )
                         }
@@ -190,172 +190,140 @@ fun NavegacionApp() {
             NavHost(
                 navController = navController,
                 startDestination = Pantalla.Login.ruta,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
             ) {
-                // AUTH
                 composable(Pantalla.Login.ruta) {
                     val loginViewModel: LoginViewModel = viewModel { LoginViewModel(database.usuarioDao()) }
-                    LoginScreen(
-                        viewModel = loginViewModel,
-                        onLoginExitoso = {
-                            navController.navigate(Pantalla.Inicio.ruta) {
-                                popUpTo(Pantalla.Login.ruta) { inclusive = true }
-                            }
-                        },
-                        onRegisterClick = { navController.navigate(Pantalla.Registro.ruta) }
-                    )
+                    LoginScreen(viewModel = loginViewModel, onLoginExitoso = {
+                        navController.navigate(Pantalla.Inicio.ruta) { popUpTo(Pantalla.Login.ruta) { inclusive = true } }
+                    }, onRegisterClick = { navController.navigate(Pantalla.Registro.ruta) })
                 }
                 composable(Pantalla.Registro.ruta) {
                     val registroViewModel: RegistroViewModel = viewModel { RegistroViewModel(database.usuarioDao()) }
-                    RegistroScreen(
-                        viewModel = registroViewModel,
-                        onRegistroExitoso = {
-                            navController.navigate(Pantalla.Inicio.ruta) {
-                                popUpTo(Pantalla.Login.ruta) { inclusive = true }
-                            }
-                        },
-                        onIrALogin = { navController.popBackStack() }
-                    )
+                    RegistroScreen(viewModel = registroViewModel, onRegistroExitoso = {
+                        navController.navigate(Pantalla.Inicio.ruta) { popUpTo(Pantalla.Login.ruta) { inclusive = true } }
+                    }, onIrALogin = { navController.popBackStack() } )
                 }
-
-                // PRINCIPALES
-                composable(Pantalla.Inicio.ruta) { PantallaEnConstruccion("Inicio") }
-                
-                composable(Pantalla.Salud.ruta) { 
-                    val medViewModel: MedicamentoViewModel = viewModel()
-                    PantallaSalud(viewModel = medViewModel)
+                composable(Pantalla.Inicio.ruta) {
+                    val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
+                    val saludViewModel: SaludViewModel = viewModel { SaludViewModel(repoSalud) }
+                    PantallaInicio(navController = navController, inventarioViewModel = invViewModel, saludViewModel = saludViewModel)
                 }
-                
-                composable(Pantalla.Tareas.ruta) { 
-                    PantallaTareas(navController) 
+                composable(Pantalla.Tareas.ruta) {
+                    val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao()) }
+                    PantallaTareas(navController = navController, trabajadoresViewModel = trabViewModel)
                 }
-                
+                composable(Pantalla.Salud.ruta) {
+                    val saludViewModel: SaludViewModel = viewModel { SaludViewModel(repoSalud) }
+                    PantallaSalud(navController = navController, viewModel = saludViewModel)
+                }
                 composable(Pantalla.Reportes.ruta) {
                     val useCase = GenerarReporteUseCase(repoAnimales)
                     val reporteViewModel: ReporteViewModel = viewModel { ReporteViewModel(useCase) }
-                    PantallaReportes(viewModel = reporteViewModel)
+                    PantallaReportes(navController = navController, viewModel = reporteViewModel)
                 }
-
-                // INVENTARIO
+                composable(Pantalla.Trabajadores.ruta) {
+                    val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao()) }
+                    PantallaTrabajadores(navController = navController, viewModel = trabViewModel)
+                }
                 composable(Pantalla.Inventario.ruta) {
                     val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
-                    PantallaInventario(
-                        viewModel = invViewModel,
-                        alSeleccionarAnimal = { idArete -> 
-                            val animal = invViewModel.listaAnimales.find { it.idArete == idArete }
-                            if (animal?.estado == "Pendiente") {
-                                navController.navigate(Pantalla.RegistrarAnimal.crearRuta(idTemp = idArete))
-                            } else {
-                                navController.navigate(Pantalla.EditarAnimal.crearRuta(idArete))
-                            }
-                        },
-                        alAgregarAnimal = { tipo -> 
-                            navController.navigate(Pantalla.RegistrarAnimal.crearRuta(tipo))
-                        }
+                    PantallaInventario(navController = navController, viewModel = invViewModel, alSeleccionarAnimal = { id -> 
+                        val animal = invViewModel.listaAnimales.find { it.idArete == id }
+                        if (animal?.estado == "Pendiente") navController.navigate(Pantalla.RegistrarAnimal.crearRuta(idTemp = id))
+                        else navController.navigate(Pantalla.EditarAnimal.crearRuta(id))
+                    }, alAgregarAnimal = { tipo -> navController.navigate(Pantalla.RegistrarAnimal.crearRuta(tipo)) })
+                }
+                composable(Pantalla.Lotes.ruta) {
+                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
+                    PantallaLotes(
+                        navController = navController,
+                        viewModel = lotesViewModel,
+                        onAgregarLote = { navController.navigate(Pantalla.RegistrarLote.ruta) },
+                        onVerDetalle = { idLote -> navController.navigate(Pantalla.DetalleLote.crearRuta(idLote)) }
                     )
                 }
+                composable(Pantalla.RegistrarLote.ruta) {
+                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
+                    PantallaRegistrarLote(viewModel = lotesViewModel, onVolver = { navController.popBackStack() })
+                }
                 composable(
-                    route = Pantalla.RegistrarAnimal.ruta,
+                    route = Pantalla.DetalleLote.ruta,
+                    arguments = listOf(navArgument("idLote") { type = NavType.IntType })
+                ) { backStackEntry ->
+                    val idLote = backStackEntry.arguments?.getInt("idLote") ?: 0
+                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
+                    val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
+                    val lotesState by lotesViewModel.lotes.collectAsState()
+                    val lote = lotesState.find { it.id == idLote }
+                    val animales = invViewModel.listaAnimales.filter { it.ubicacion == lote?.nombre }
+                    
+                    if (lote != null) {
+                        PantallaDetalleLote(
+                            lote = lote,
+                            animalesEnLote = animales,
+                            todosLosLotes = lotesState,
+                            viewModel = lotesViewModel,
+                            onVolver = { navController.popBackStack() },
+                            onVerAnimal = { idArete -> navController.navigate(Pantalla.EditarAnimal.crearRuta(idArete)) }
+                        )
+                    }
+                }
+                composable(Pantalla.Perfil.ruta) {
+                    PantallaPerfil(navController = navController)
+                }
+                composable(Pantalla.Configuracion.ruta) {
+                    PantallaConfiguracion(navController = navController)
+                }
+                composable(
+                    route = Pantalla.RegistrarAnimal.ruta, 
                     arguments = listOf(
-                        navArgument("tipo") { type = NavType.StringType; nullable = true; defaultValue = null },
-                        navArgument("idTemp") { type = NavType.StringType; nullable = true; defaultValue = null }
+                        navArgument("tipo") { type = NavType.StringType; nullable = true }, 
+                        navArgument("idTemp") { type = NavType.StringType; nullable = true }
                     )
                 ) { entrada ->
-                    val tipo = entrada.arguments?.getString("tipo")
-                    val idTemp = entrada.arguments?.getString("idTemp")
                     val regViewModel: RegistrarAnimalViewModel = viewModel { RegistrarAnimalViewModel(repoAnimales) }
-                    
-                    LaunchedEffect(tipo, idTemp) {
-                        if (idTemp != null) regViewModel.cargarParaCompletar(idTemp)
-                        else if (tipo != null) regViewModel.tipo = tipo
+                    LaunchedEffect(entrada.arguments) {
+                        entrada.arguments?.getString("idTemp")?.let { regViewModel.cargarParaCompletar(it) } 
+                            ?: entrada.arguments?.getString("tipo")?.let { regViewModel.tipo = it }
                     }
-
                     PantallaRegistrarAnimal(viewModel = regViewModel, alFinalizar = { navController.popBackStack() })
                 }
                 composable(
-                    route = Pantalla.EditarAnimal.ruta,
+                    route = Pantalla.EditarAnimal.ruta, 
                     arguments = listOf(navArgument("idArete") { type = NavType.StringType })
                 ) { entrada ->
                     val idArete = entrada.arguments?.getString("idArete") ?: ""
                     val editViewModel: EditarAnimalViewModel = viewModel { EditarAnimalViewModel(repoAnimales) }
                     PantallaEditarAnimal(idArete = idArete, viewModel = editViewModel, alVolver = { navController.popBackStack() })
                 }
-
-                // MÓDULO DE LOTES
-                composable(Pantalla.Lotes.ruta) {
-                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
-                    PantallaLotes(
-                        viewModel = lotesViewModel,
-                        onAgregarLote = {
-                            navController.navigate(Pantalla.RegistrarLote.ruta)
-                        },
-                        onVerDetalle = { idLote ->
-                            navController.navigate(Pantalla.DetalleLote.crearRuta(idLote))
-                        }
-                    )
-                }
-
-                composable(Pantalla.RegistrarLote.ruta) {
-                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
-                    PantallaRegistrarLote(
-                        viewModel = lotesViewModel,
-                        onVolver = { navController.popBackStack() }
-                    )
-                }
-
-                composable(
-                    route = Pantalla.DetalleLote.ruta,
-                    arguments = listOf(navArgument("idLote") { type = NavType.IntType })
-                ) { entrada ->
-                    val idLote = entrada.arguments?.getInt("idLote") ?: 0
-                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
-
-                    val lotes by lotesViewModel.lotes.collectAsState()
-                    val loteSeleccionado = lotes.find { it.id == idLote }
-                    val animalesEnLote = emptyList<Animal>()
-
-                    if (loteSeleccionado != null) {
-                        PantallaDetalleLote(
-                            lote = loteSeleccionado,
-                            animalesEnLote = animalesEnLote,
-                            todosLosLotes = lotes,
-                            viewModel = lotesViewModel,
-                            onVolver = { navController.popBackStack() },
-                            onVerAnimal = { idAnimal ->
-                                navController.navigate(Pantalla.EditarAnimal.crearRuta(idAnimal.toString()))
-                            }
-                        )
-                    }
-                }
             }
         }
 
-        if (mostrarShakeOverlay) {
+        AnimatedVisibility(
+            visible = mostrarShakeOverlay,
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut()
+        ) {
             ShakeOverlay(
                 onRegistrarNacimiento = {
                     mostrarShakeOverlay = false
                     scope.launch {
-                        val resultado = repoAnimales.registrarNacimientoRapido()
-                        resultado.onSuccess {
-                            Toast.makeText(context, "Nacimiento registrado. ¡Suerte con la vaca!", Toast.LENGTH_LONG).show()
-                        }.onFailure {
-                            Toast.makeText(context, "Error al registrar: ${it.message}", Toast.LENGTH_SHORT).show()
+                        repoAnimales.registrarNacimientoRapido().onSuccess {
+                            Toast.makeText(context, "Nacimiento registrado instantáneamente", Toast.LENGTH_LONG).show()
                         }
                     }
                 },
                 onRegistrarEnfermedad = {
                     mostrarShakeOverlay = false
-                    navController.navigate(Pantalla.Salud.ruta)
+                    scope.launch {
+                        repoSalud.registrarAlertaEnfermedadRapida().onSuccess {
+                            Toast.makeText(context, "Alerta de salud registrada como pendiente", Toast.LENGTH_LONG).show()
+                        }
+                    }
                 },
                 onDismiss = { mostrarShakeOverlay = false }
             )
         }
-    }
-}
-
-@Composable
-fun PantallaEnConstruccion(nombre: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Módulo de $nombre (En desarrollo)", color = Color.Gray)
     }
 }

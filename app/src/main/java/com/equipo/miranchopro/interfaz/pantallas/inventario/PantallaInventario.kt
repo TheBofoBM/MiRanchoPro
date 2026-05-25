@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material3.*
@@ -19,20 +21,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.equipo.miranchopro.data.model.Animal
+import com.equipo.miranchopro.interfaz.navegacion.Pantalla
 import com.equipo.miranchopro.modelovista.InventarioViewModel
 import com.equipo.miranchopro.modelovista.VistaInventario
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaInventario(
+    navController: NavController,
     viewModel: InventarioViewModel,
     alSeleccionarAnimal: (String) -> Unit = {},
     alAgregarAnimal: (String?) -> Unit = {}
 ) {
     var animalACancelar by remember { mutableStateOf<Animal?>(null) }
+    var menuExpandido by remember { mutableStateOf(false) }
 
     BackHandler(enabled = viewModel.vistaActual != VistaInventario.CATEGORIAS) {
         viewModel.volverACategorias()
@@ -60,6 +64,7 @@ fun PantallaInventario(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             if (viewModel.vistaActual != VistaInventario.DADOS_DE_BAJA && viewModel.vistaActual != VistaInventario.PENDIENTES) {
                 FloatingActionButton(
@@ -85,49 +90,90 @@ fun PantallaInventario(
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .statusBarsPadding()
-                        .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 40.dp)
-                        .fillMaxWidth()
+                        .padding(start = 24.dp, top = 4.dp, end = 16.dp, bottom = 16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (viewModel.vistaActual != VistaInventario.CATEGORIAS) {
-                            IconButton(
-                                onClick = { viewModel.volverACategorias() },
-                                modifier = Modifier.padding(end = 8.dp).size(48.dp)
-                            ) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White, modifier = Modifier.size(36.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (viewModel.vistaActual != VistaInventario.CATEGORIAS) {
+                                IconButton(
+                                    onClick = { viewModel.volverACategorias() },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
                             }
+                            Text(
+                                text = when (viewModel.vistaActual) {
+                                    VistaInventario.CATEGORIAS -> "Inventario"
+                                    VistaInventario.DADOS_DE_BAJA -> "Bajas"
+                                    VistaInventario.PENDIENTES -> "Pendientes"
+                                    VistaInventario.DETALLE_CATEGORIA -> viewModel.categoriaSeleccionada ?: "Lista"
+                                    else -> "Inventario"
+                                },
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White,
+                                letterSpacing = (-1).sp,
+                                maxLines = 1
+                            )
                         }
+                        
                         Text(
-                            text = when (viewModel.vistaActual) {
-                                VistaInventario.CATEGORIAS -> "Inventario"
-                                VistaInventario.DADOS_DE_BAJA -> "Bajas"
-                                VistaInventario.PENDIENTES -> "Pendientes"
-                                VistaInventario.DETALLE_CATEGORIA -> viewModel.categoriaSeleccionada ?: "Lista"
-                                else -> "Inventario"
+                            text = when(viewModel.vistaActual) {
+                                VistaInventario.CATEGORIAS -> "${viewModel.listaAnimales.filter { it.estado != "Baja" && it.estado != "Pendiente" }.size} registrados"
+                                VistaInventario.PENDIENTES -> "Nacimientos pendientes"
+                                else -> "Explorando catálogo"
                             },
-                            fontSize = 48.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White,
-                            letterSpacing = (-1.5).sp,
-                            lineHeight = 52.sp
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (viewModel.vistaActual == VistaInventario.PENDIENTES) Color(0xFFFFC107) else Color(0xFF00BFA5)
                         )
                     }
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Text(
-                        text = when(viewModel.vistaActual) {
-                            VistaInventario.CATEGORIAS -> "${viewModel.listaAnimales.filter { it.estado != "Baja" && it.estado != "Pendiente" }.size} animales registrados"
-                            VistaInventario.PENDIENTES -> "Nacimientos por completar"
-                            else -> "Explorando catálogo ganadero"
-                        },
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (viewModel.vistaActual == VistaInventario.PENDIENTES) Color(0xFFFFC107) else Color(0xFF00BFA5)
-                    )
+
+                    Box {
+                        IconButton(onClick = { menuExpandido = true }) {
+                            Icon(Icons.Default.AccountCircle, "Menú", tint = Color.White, modifier = Modifier.size(30.dp))
+                        }
+                        DropdownMenu(
+                            expanded = menuExpandido,
+                            onDismissRequest = { menuExpandido = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Perfil") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Perfil.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Person, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Configuración") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Configuracion.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Settings, null) }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Cerrar sesión") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Login.ruta) {
+                                        popUpTo(0)
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -156,10 +202,10 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
             item {
                 Text(
                     text = "REGISTROS POR COMPLETAR",
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFFD32F2F),
-                    letterSpacing = 2.sp
+                    letterSpacing = 1.5.sp
                 )
             }
             item {
@@ -178,10 +224,10 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
         item {
             Text(
                 text = "SECCIONES DEL RANCHO",
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.Gray,
-                letterSpacing = 2.sp
+                letterSpacing = 1.5.sp
             )
         }
         
@@ -344,7 +390,7 @@ fun TarjetaAnimalLujo(
                 if (animal.estado == "Pendiente") {
                     IconButton(onClick = onCancelar) {
                         Icon(
-                            imageVector = Icons.Outlined.DeleteOutline, 
+                            imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "Cancelar registro", 
                             tint = Color.Red
                         )

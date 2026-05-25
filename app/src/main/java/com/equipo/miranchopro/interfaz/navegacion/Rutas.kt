@@ -6,4 +6,6 @@ sealed class Rutas(val ruta: String) {
     object Tareas : Rutas("tareas")
     object Inventario : Rutas("inventario")
     object Lotes : Rutas("lotes")
+    object Trabajadores : Rutas("trabajadores")
+    object Insumos : Rutas("insumos")
 }
