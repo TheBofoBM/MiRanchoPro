@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,14 +16,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import com.equipo.miranchopro.interfaz.navegacion.Pantalla
 import com.equipo.miranchopro.viewmodel.ReporteViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun PantallaReportes(viewModel: ReporteViewModel) {
+fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) {
     val reporte by viewModel.reporte.collectAsState()
     val cargando by viewModel.estaCargando.collectAsState()
+    var menuExpandido by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.cargarReporte()
@@ -38,29 +44,67 @@ fun PantallaReportes(viewModel: ReporteViewModel) {
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .statusBarsPadding()
-                        .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 40.dp)
-                        .fillMaxWidth()
+                        .padding(start = 24.dp, top = 8.dp, end = 16.dp, bottom = 16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Reportes",
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White,
-                        letterSpacing = (-1.5).sp,
-                        lineHeight = 52.sp
-                    )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Text(
-                        text = "Estado general del rancho",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF00BFA5)
-                    )
+                    Column {
+                        Text(
+                            text = "Reportes",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                            letterSpacing = (-1).sp
+                        )
+                        Text(
+                            text = "Estadísticas del rancho",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF00BFA5)
+                        )
+                    }
+
+                    Box {
+                        IconButton(onClick = { menuExpandido = true }) {
+                            Icon(Icons.Default.AccountCircle, "Menú", tint = Color.White, modifier = Modifier.size(32.dp))
+                        }
+                        DropdownMenu(
+                            expanded = menuExpandido,
+                            onDismissRequest = { menuExpandido = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Perfil") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Perfil.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Person, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Configuración") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Configuracion.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Settings, null) }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Cerrar sesión") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Login.ruta) {
+                                        popUpTo(0)
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -95,7 +139,7 @@ fun PantallaReportes(viewModel: ReporteViewModel) {
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(20.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(2.dp)
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
                                 Column(Modifier.padding(20.dp)) {
                                     datos.conteoPorRaza.forEach { (raza, cantidad) ->
@@ -149,7 +193,7 @@ fun TarjetaEstadisticaLujo(titulo: String, valor: String, modifier: Modifier = M
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.Start) {
             Text(titulo, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)

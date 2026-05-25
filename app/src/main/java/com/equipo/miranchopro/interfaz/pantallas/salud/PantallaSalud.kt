@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,8 +20,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.equipo.miranchopro.data.model.*
 import com.equipo.miranchopro.interfaz.componentes.*
+import com.equipo.miranchopro.interfaz.navegacion.Pantalla
 import com.equipo.miranchopro.modelovista.SaludViewModel
 
 enum class VistaSalud {
@@ -33,9 +37,11 @@ enum class VistaSalud {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaSalud(
+    navController: NavController,
     viewModel: SaludViewModel
 ) {
     var vistaActual by remember { mutableStateOf(VistaSalud.CATEGORIAS) }
+    var menuExpandido by remember { mutableStateOf(false) }
     
     var mostrarDialogoMedicamento by remember { mutableStateOf(false) }
     var medicamentoAEditar by remember { mutableStateOf<Medicamento?>(null) }
@@ -50,7 +56,6 @@ fun PantallaSalud(
     val pendientes = enfermedades.filter { it.estado == "Pendiente" }
     val activas = enfermedades.filter { it.estado == "Activo" || it.estado == "Recuperado" }
 
-    // Diálogo para completar alerta pendiente (reutilizamos DialogoEnfermedad con datos)
     if (enfermedadACompletar != null) {
         DialogoEnfermedad(
             onDismiss = { enfermedadACompletar = null },
@@ -88,6 +93,7 @@ fun PantallaSalud(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             if (vistaActual != VistaSalud.CATEGORIAS && vistaActual != VistaSalud.LISTA_PENDIENTES) {
                 FloatingActionButton(
@@ -117,29 +123,79 @@ fun PantallaSalud(
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.statusBarsPadding().padding(24.dp).fillMaxWidth()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (vistaActual != VistaSalud.CATEGORIAS) {
-                            IconButton(onClick = { vistaActual = VistaSalud.CATEGORIAS }) {
-                                Icon(Icons.Default.ArrowBack, null, tint = Color.White)
+                Row(
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(start = 24.dp, top = 8.dp, end = 16.dp, bottom = 16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (vistaActual != VistaSalud.CATEGORIAS) {
+                                IconButton(onClick = { vistaActual = VistaSalud.CATEGORIAS }, modifier = Modifier.size(32.dp)) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
                             }
+                            Text(
+                                text = when(vistaActual) {
+                                    VistaSalud.CATEGORIAS -> "Salud Animal"
+                                    VistaSalud.LISTA_MEDICAMENTOS -> "Medicinas"
+                                    VistaSalud.LISTA_VACUNACION -> "Vacunas"
+                                    VistaSalud.LISTA_ENFERMEDADES -> "Historial"
+                                    VistaSalud.LISTA_PENDIENTES -> "Pendientes"
+                                },
+                                fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color.White,
+                                letterSpacing = (-1).sp
+                            )
                         }
                         Text(
-                            text = when(vistaActual) {
-                                VistaSalud.CATEGORIAS -> "Salud Animal"
-                                VistaSalud.LISTA_MEDICAMENTOS -> "Medicinas"
-                                VistaSalud.LISTA_VACUNACION -> "Vacunas"
-                                VistaSalud.LISTA_ENFERMEDADES -> "Historial"
-                                VistaSalud.LISTA_PENDIENTES -> "Pendientes"
-                            },
-                            fontSize = 40.sp, fontWeight = FontWeight.Black, color = Color.White
+                            text = if (pendientes.isNotEmpty()) "${pendientes.size} alertas pendientes" else "Estado médico del rancho",
+                            fontSize = 14.sp,
+                            color = if (pendientes.isNotEmpty()) Color(0xFFE53935) else Color(0xFF00BFA5),
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
-                    Text(
-                        text = if (pendientes.isNotEmpty()) "${pendientes.size} alertas por completar" else "Estado médico del rancho",
-                        color = if (pendientes.isNotEmpty()) Color(0xFFE53935) else Color(0xFF00BFA5),
-                        fontWeight = FontWeight.Bold
-                    )
+
+                    Box {
+                        IconButton(onClick = { menuExpandido = true }) {
+                            Icon(Icons.Default.AccountCircle, "Menú", tint = Color.White, modifier = Modifier.size(32.dp))
+                        }
+                        DropdownMenu(
+                            expanded = menuExpandido,
+                            onDismissRequest = { menuExpandido = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Perfil") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Perfil.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Person, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Configuración") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Configuracion.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Settings, null) }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Cerrar sesión") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Login.ruta) {
+                                        popUpTo(0)
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -149,7 +205,7 @@ fun PantallaSalud(
                         LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             if (pendientes.isNotEmpty()) {
                                 item {
-                                    Text("ALERTAS POR COMPLETAR", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Red, letterSpacing = 2.sp)
+                                    Text("ALERTAS POR COMPLETAR", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Red, letterSpacing = 1.5.sp)
                                 }
                                 item {
                                     CardCategoriaLujo(
@@ -163,7 +219,7 @@ fun PantallaSalud(
                                 }
                             }
                             item {
-                                Text("SECCIONES MÉDICAS", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 2.sp)
+                                Text("SECCIONES MÉDICAS", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 1.5.sp)
                             }
                             item {
                                 CardCategoriaLujo(
@@ -215,9 +271,9 @@ fun PantallaSalud(
                             }
                         }
                     }
-                    VistaSalud.LISTA_MEDICAMENTOS -> SeccionListaMedicamentos(medicamentos, viewModel) { medicamentoAEditar = it; mostrarDialogoMedicamento = true }
+                    VistaSalud.LISTA_MEDICAMENTOS -> SeccionListaMedicamentos(medicamentos, viewModel) { medicamento -> medicamentoAEditar = medicamento; mostrarDialogoMedicamento = true }
                     VistaSalud.LISTA_VACUNACION -> SeccionListaVacunacion(vacunaciones)
-                    VistaSalud.LISTA_ENFERMEDADES -> SeccionListaEnfermedades(activas) { enf, estado -> viewModel.actualizarEstadoEnfermedad(enf, estado) }
+                    VistaSalud.LISTA_ENFERMEDADES -> SeccionListaEnfermedades(activas, { enf, estado -> viewModel.actualizarEstadoEnfermedad(enf, estado) })
                 }
             }
         }

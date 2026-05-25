@@ -1,13 +1,15 @@
 package com.equipo.miranchopro.interfaz.pantallas.insumos
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,18 +17,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.equipo.miranchopro.data.model.Insumo
 import com.equipo.miranchopro.interfaz.componentes.DialogoInsumo
+import com.equipo.miranchopro.interfaz.navegacion.Pantalla
 import com.equipo.miranchopro.viewmodel.InsumoViewModel
 
 @Composable
 fun PantallaInsumos(
+    navController: NavController,
     viewModel: InsumoViewModel
 ) {
     val insumos by viewModel.listaInsumos.collectAsState()
     var mostrarDialogo by remember { mutableStateOf(false) }
     var insumoAEditar by remember { mutableStateOf<Insumo?>(null) }
     var mostrarDialogoConsumo by remember { mutableStateOf<Insumo?>(null) }
+    var menuExpandido by remember { mutableStateOf(false) }
 
     if (mostrarDialogo) {
         DialogoInsumo(
@@ -36,12 +43,7 @@ fun PantallaInsumos(
                 insumoAEditar = null
             },
             onConfirm = { nombre, tipo, cantidad, unidad ->
-                if (insumoAEditar != null) {
-                    // Lógica para actualizar si fuera necesario, por ahora solo agregar
-                    viewModel.agregarInsumo(nombre, tipo, cantidad, unidad)
-                } else {
-                    viewModel.agregarInsumo(nombre, tipo, cantidad, unidad)
-                }
+                viewModel.agregarInsumo(nombre, tipo, cantidad, unidad)
                 mostrarDialogo = false
                 insumoAEditar = null
             }
@@ -66,32 +68,88 @@ fun PantallaInsumos(
                     insumoAEditar = null
                     mostrarDialogo = true 
                 },
-                containerColor = Color(0xFF00897B),
+                containerColor = Color(0xFF008577),
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Insumo")
+                Icon(Icons.Default.Add, contentDescription = "Agregar")
             }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
+                .background(Color(0xFFF8F9FA))
+                .padding(bottom = padding.calculateBottomPadding())
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Inventario de Insumos",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Control de alimentación y forrajes",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                color = Color.Black,
+                shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(start = 24.dp, top = 16.dp, end = 16.dp, bottom = 20.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "Insumos",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                            letterSpacing = (-1).sp
+                        )
+                        Text(
+                            text = "Alimentación y forrajes",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF00BFA5)
+                        )
+                    }
+
+                    Box {
+                        IconButton(onClick = { menuExpandido = true }) {
+                            Icon(Icons.Default.AccountCircle, "Menú", tint = Color.White, modifier = Modifier.size(32.dp))
+                        }
+                        DropdownMenu(
+                            expanded = menuExpandido,
+                            onDismissRequest = { menuExpandido = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Perfil") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Perfil.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Person, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Configuración") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Configuracion.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Settings, null) }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Cerrar sesión") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.Login.ruta) {
+                                        popUpTo(0)
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) }
+                            )
+                        }
+                    }
+                }
+            }
 
             if (insumos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -99,14 +157,14 @@ fun PantallaInsumos(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
                 ) {
                     items(insumos, key = { it.id }) { insumo ->
                         TarjetaInsumo(
                             insumo = insumo,
                             onRegistrarConsumo = { mostrarDialogoConsumo = insumo },
-                            onAbastecer = { /* Lógica para añadir stock */ }
+                            onAbastecer = { /* Lógica para stock */ }
                         )
                     }
                 }
@@ -126,7 +184,8 @@ fun TarjetaInsumo(
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -138,7 +197,7 @@ fun TarjetaInsumo(
                     Icon(
                         Icons.Default.Inventory2,
                         contentDescription = null,
-                        tint = Color(0xFF00897B),
+                        tint = Color(0xFF008577),
                         modifier = Modifier.padding(8.dp)
                     )
                 }
@@ -158,15 +217,14 @@ fun TarjetaInsumo(
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onRegistrarConsumo) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Registrar Suministro")
+                    Text("Registrar Suministro", color = Color(0xFF008577))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
                     onClick = onAbastecer,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00897B))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF008577)),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text("Abastecer")
                 }
             }
