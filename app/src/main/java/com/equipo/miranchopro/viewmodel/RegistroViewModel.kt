@@ -6,7 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.equipo.miranchopro.data.local.dao.UsuarioDao
-import com.equipo.miranchopro.data.model.Usuario
+import com.equipo.miranchopro.domain.usecase.RegistrarUsuarioUseCase
+import com.equipo.miranchopro.domain.usecase.ResultadoRegistro
 import kotlinx.coroutines.launch
 
 class RegistroViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
@@ -19,36 +20,36 @@ class RegistroViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
     var registroExitoso by mutableStateOf(false)
         private set
 
+    private val registrarUsuarioUseCase = RegistrarUsuarioUseCase(usuarioDao)
+
     fun limpiarMensaje() { mensajeError = null }
 
     fun registrarUsuario(simularErrorBD: Boolean) {
         if (simularErrorBD) {
-            mensajeError = "Error al crear cuenta. Por favor, reintenta." // CP-02.3
+            mensajeError = "Error al crear cuenta. Por favor, reintenta."
             return
         }
 
-        if (correo.isBlank() || contrasena.isBlank() || confirmarContrasena.isBlank()) {
-            mensajeError = "Por favor, llena todos los campos"
-            return
-        }
-
-        if (contrasena != confirmarContrasena) {
-            mensajeError = "Las contraseñas no coinciden"
-            return
-        }
-
-        // Ejecutamos la consulta en segundo plano
         viewModelScope.launch {
-            val usuarioExistente = usuarioDao.buscarPorCorreo(correo.trim())
+            val resultado = registrarUsuarioUseCase.ejecutar(
+                correo = correo,
+                contrasena = contrasena,
+                confirmarContrasena = confirmarContrasena
+            )
 
-            if (usuarioExistente != null) {
-                // CP-02.2: El correo ya existe en la Base de Datos
-                mensajeError = "El correo ya está registrado. Sugerencia: Inicia sesión."
-            } else {
-                // CP-02.1: Éxito. Guardamos en la BD real.
-                val nuevoUsuario = Usuario(correo = correo.trim(), contrasena = contrasena, rol = "Administrador")
-                usuarioDao.registrarUsuario(nuevoUsuario)
-                registroExitoso = true
+            when (resultado) {
+                is ResultadoRegistro.Exito -> {
+                    registroExitoso = true
+                }
+                is ResultadoRegistro.CorreoDuplicado -> {
+                    mensajeError = "El correo ya está registrado. Sugerencia: Inicia sesión."
+                }
+                is ResultadoRegistro.FormatoInvalido -> {
+                    mensajeError = "El formato del correo no es válido."
+                }
+                is ResultadoRegistro.Error -> {
+                    mensajeError = resultado.mensaje
+                }
             }
         }
     }
