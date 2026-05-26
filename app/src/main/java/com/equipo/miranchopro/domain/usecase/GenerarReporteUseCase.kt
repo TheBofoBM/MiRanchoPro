@@ -22,7 +22,6 @@ data class ReporteInventario(
 class GenerarReporteUseCase(private val repository: AnimalRepository) {
 
     suspend fun ejecutar(): ReporteInventario {
-        // Obtenemos la lista actual de animales (usando first() para obtener el valor actual del Flow)
         val listaAnimales = repository.obtenerTodos().first()
         
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
@@ -41,7 +40,6 @@ class GenerarReporteUseCase(private val repository: AnimalRepository) {
             conteoPorEstado = listaAnimales.groupBy { it.estado }.mapValues { it.value.size },
             conteoPorUbicacion = listaAnimales.groupBy { it.ubicacion }.mapValues { it.value.size },
             conteoPorOrigen = listaAnimales.groupBy { it.origen }.mapValues { it.value.size },
-            // Ordenamos por fecha de registro (más recientes primero)
             animalesRecientes = listaAnimales.sortedByDescending { it.fechaRegistro }
         )
     }
