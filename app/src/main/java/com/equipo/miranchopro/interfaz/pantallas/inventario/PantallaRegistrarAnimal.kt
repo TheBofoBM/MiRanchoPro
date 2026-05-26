@@ -7,15 +7,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,6 +26,8 @@ import kotlinx.coroutines.flow.collectLatest
 private val ColorTituloSeccion = Color(0xFF00897B)
 private val ColorFondoPantalla = Color(0xFFFBFBFB)
 private val ColorBotonRegistro = Color(0xFF00796B)
+private val ColorIconoGris = Color(0xFF90A4AE)
+private val ColorTextoEtiqueta = Color(0xFF9E9E9E)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +37,6 @@ fun PantallaRegistrarAnimal(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var expandedTipo by remember { mutableStateOf(false) }
-    var expandedOrigen by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.eventoUI.collectLatest { evento ->
@@ -54,24 +56,21 @@ fun PantallaRegistrarAnimal(
         containerColor = ColorFondoPantalla,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = if (viewModel.esEdicionPendiente) "Nacimiento" else "Nuevo Registro",
-                            color = Color(0xFFB0BEC5),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            modifier = Modifier.padding(end = 48.dp) // Compensar el icono de volver
-                        )
-                    }
+                    Text(
+                        text = if (viewModel.esEdicionPendiente) "Nacimiento" else "Nuevo Registro",
+                        color = Color(0xFFB0BEC5),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = alFinalizar) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color(0xFFB0BEC5))
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
         }
     ) { padding ->
@@ -121,39 +120,35 @@ fun PantallaRegistrarAnimal(
                 CampoFormulario("Raza", viewModel.raza, { viewModel.raza = it }, "Serrana")
             }
 
-            // --- SECCIÓN 2: NACIMIENTO Y ORIGEN ---
+            // --- SECCIÓN 2: NACIMIENTO Y ORIGEN (ESTILO IMAGEN) ---
             CardSeccionRegistro("Nacimiento y Origen") {
-                CampoFormulario("Fecha de Nacimiento (dd/mm/aaaa) *", viewModel.fechaNacimiento, { viewModel.fechaNacimiento = it }, "01/01/2024")
-                
-                Text("Origen del Animal", fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                ExposedDropdownMenuBox(
-                    expanded = expandedOrigen,
-                    onExpandedChange = { if (!viewModel.esEdicionPendiente) expandedOrigen = !expandedOrigen }
-                ) {
-                    OutlinedTextField(
-                        value = viewModel.origen,
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { if (!viewModel.esEdicionPendiente) ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedOrigen) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            disabledContainerColor = Color(0xFFF5F5F5),
-                            disabledTextColor = Color.Gray
-                        ),
-                        enabled = !viewModel.esEdicionPendiente
+                if (viewModel.esEdicionPendiente) {
+                    // Vista de lectura automática según imagen
+                    InfoItemLectura(
+                        label = "Fecha de Nacimiento (Capturada)",
+                        value = viewModel.fechaNacimiento,
+                        icon = Icons.Outlined.CalendarMonth
                     )
-                    ExposedDropdownMenu(expanded = expandedOrigen, onDismissRequest = { expandedOrigen = false }) {
-                        viewModel.origenesDisponibles.forEach { opcion ->
-                            DropdownMenuItem(
-                                text = { Text(opcion) },
-                                onClick = { viewModel.origen = opcion; expandedOrigen = false }
-                            )
-                        }
-                    }
+                    InfoItemLectura(
+                        label = "Hora de Nacimiento",
+                        value = viewModel.horaNacimientoRegistrada,
+                        icon = Icons.Outlined.AccessTime
+                    )
+                    InfoItemLectura(
+                        label = "Origen",
+                        value = "De parto (Automático)",
+                        icon = Icons.Outlined.AutoAwesome
+                    )
+                    InfoItemLectura(
+                        label = "Ubicación Sugerida",
+                        value = "Lote recién nacidos",
+                        icon = Icons.Outlined.LocationOn
+                    )
+                } else {
+                    // Vista de edición manual para registros normales
+                    CampoFormulario("Fecha de Nacimiento (dd/mm/aaaa) *", viewModel.fechaNacimiento, { viewModel.fechaNacimiento = it }, "01/01/2024")
+                    CampoFormulario("Ubicación / Lote", viewModel.ubicacion, { viewModel.ubicacion = it }, "Ej: Lote A")
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                CampoFormulario("Ubicación / Lote", viewModel.ubicacion, { viewModel.ubicacion = it }, "Ej: Lote A", enabled = !viewModel.esEdicionPendiente)
             }
 
             // --- SECCIÓN 3: CARACTERÍSTICAS FÍSICAS ---
@@ -190,6 +185,37 @@ fun PantallaRegistrarAnimal(
             }
             
             Spacer(modifier = Modifier.height(40.dp))
+        }
+    }
+}
+
+@Composable
+fun InfoItemLectura(label: String, value: String, icon: ImageVector) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = ColorIconoGris,
+            modifier = Modifier.size(28.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = ColorTextoEtiqueta
+            )
+            Text(
+                text = value,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
         }
     }
 }
@@ -234,8 +260,8 @@ fun CampoFormulario(label: String, valor: String, onValueChange: (String) -> Uni
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = ColorTituloSeccion,
                 unfocusedBorderColor = Color(0xFFECEFF1),
-                disabledContainerColor = Color(0xFFF5F5F5),
-                disabledBorderColor = Color(0xFFECEFF1),
+                disabledContainerColor = Color.White,
+                disabledBorderColor = Color.Transparent,
                 focusedTextColor = Color.Black,
                 unfocusedTextColor = Color.Black
             )
