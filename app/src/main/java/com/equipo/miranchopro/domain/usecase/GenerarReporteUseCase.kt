@@ -22,6 +22,7 @@ data class ReporteInventario(
 class GenerarReporteUseCase(private val repository: AnimalRepository) {
 
     suspend fun ejecutar(): ReporteInventario {
+        // Obtenemos la lista unificada de la base de datos
         val listaAnimales = repository.obtenerTodos().first()
         
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
@@ -35,11 +36,13 @@ class GenerarReporteUseCase(private val repository: AnimalRepository) {
             totalAnimales = listaAnimales.size,
             pesoPromedio = promedio,
             totalPeso = pesoTotal,
+            // Agrupaciones basadas en tu lógica de registro (Tipo, Ubicación, Origen)
             conteoPorTipo = listaAnimales.groupBy { it.tipo }.mapValues { it.value.size },
             conteoPorRaza = listaAnimales.groupBy { it.raza }.mapValues { it.value.size },
             conteoPorEstado = listaAnimales.groupBy { it.estado }.mapValues { it.value.size },
             conteoPorUbicacion = listaAnimales.groupBy { it.ubicacion }.mapValues { it.value.size },
             conteoPorOrigen = listaAnimales.groupBy { it.origen }.mapValues { it.value.size },
+            // Ordenamos por fecha de registro para mostrar los animales más recientes
             animalesRecientes = listaAnimales.sortedByDescending { it.fechaRegistro }
         )
     }

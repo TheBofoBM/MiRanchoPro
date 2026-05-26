@@ -7,11 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +28,7 @@ fun PantallaRegistrarAnimal(
     alFinalizar: () -> Unit = {}
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    var expandedTipo by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.eventoUI.collectLatest { evento ->
@@ -48,131 +45,187 @@ fun PantallaRegistrarAnimal(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { relleno ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF8F9FA))
+                .verticalScroll(rememberScrollState())
                 .padding(bottom = relleno.calculateBottomPadding())
         ) {
-            Surface(
-                color = Color.Black,
-                shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
-                modifier = Modifier.fillMaxWidth()
+            // --- ENCABEZADO ESTILO PERSONALIZADO (IMAGEN) ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .background(
+                        color = Color.Black,
+                        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .padding(start = 12.dp, top = 4.dp, end = 24.dp, bottom = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = alFinalizar) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = Color.White)
+                Column(modifier = Modifier.align(Alignment.BottomStart)) {
+                    IconButton(
+                        onClick = alFinalizar,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
                     }
-                    Column {
-                        Text(
-                            text = if (viewModel.horaNacimientoRegistrada != null) "Nacimiento" else "Nuevo Animal",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White,
-                            letterSpacing = (-1).sp
-                        )
-                        Text(
-                            text = "Formulario de registro",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF00BFA5)
-                        )
-                    }
+                    Text(
+                        text = if (viewModel.esEdicionPendiente) "Nacimiento" else "Nuevo Registro",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Formulario de registro",
+                        fontSize = 14.sp,
+                        color = Color(0xFF00BFA5),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp)
-            ) {
-                if (viewModel.horaNacimientoRegistrada != null) {
-                    Surface(
-                        color = Color(0xFFE0F2F1),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+            Column(modifier = Modifier.padding(24.dp)) {
+                
+                // --- CARD DE HORA CAPTURADA ---
+                Surface(
+                    color = Color(0xFFE0F2F1),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.AccessTime, null, tint = Color(0xFF008577))
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text("Hora capturada", fontSize = 12.sp, color = Color(0xFF00695C))
-                                Text(viewModel.horaNacimientoRegistrada!!, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF004D40))
-                            }
+                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF008577), modifier = Modifier.size(32.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text("Hora capturada", fontSize = 12.sp, color = Color(0xFF00796B))
+                            Text(viewModel.horaNacimientoRegistrada, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                         }
                     }
                 }
 
-                Text("Tag / Identificador (Arete)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = viewModel.idArete,
-                    onValueChange = { viewModel.idArete = it },
-                    placeholder = { Text("Ej: A-102", color = Color.Gray) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                // --- FORMULARIO ---
+                Text("Tag / Identificador (Arete)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                CampoEntrada(viewModel.idArete, { viewModel.idArete = it }, "Ej: A-102")
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Text("Nombre (Opcional)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = viewModel.nombre,
-                    onValueChange = { viewModel.nombre = it },
-                    placeholder = { Text("Ej: Lucero", color = Color.Gray) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
+                Text("Nombre (Opcional)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                CampoEntrada(viewModel.nombre, { viewModel.nombre = it }, "Ej: Lucero")
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Raza", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = viewModel.raza,
-                            onValueChange = { viewModel.raza = it },
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        Text("Raza", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        CampoEntrada(viewModel.raza, { viewModel.raza = it }, "Serrana")
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Peso (kg)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = viewModel.peso,
-                            onValueChange = { viewModel.peso = it },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        Text("Peso (kg)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                        CampoEntrada(viewModel.peso, { viewModel.peso = it }, "Ej: 35.5", KeyboardType.Decimal)
                     }
                 }
 
+                if (!viewModel.esEdicionPendiente) {
+                    Text("Tipo de Animal", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    SelectorTipo(viewModel)
+
+                    Text("Fecha de Nacimiento", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    CampoEntrada(viewModel.fechaNacimiento, { viewModel.fechaNacimiento = it }, "dd/mm/aaaa")
+                    
+                    Text("Origen", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    SelectorOrigen(viewModel)
+
+                    Text("Ubicación / Lote", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    CampoEntrada(viewModel.ubicacion, { viewModel.ubicacion = it }, "Ej: Lote A")
+                }
+
+                Text("Color", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                CampoEntrada(viewModel.color, { viewModel.color = it }, "Ej: Café")
+
+                Text("Marcas", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                CampoEntrada(viewModel.marcas, { viewModel.marcas = it }, "Ej: Marca oreja")
+
+                Text("Características", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                CampoEntrada(viewModel.caracteristica, { viewModel.caracteristica = it }, "Ej: Notas físicas")
+
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // --- BOTÓN PRINCIPAL (ESTILO IMAGEN) ---
                 Button(
                     onClick = { viewModel.registrarAnimal() },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF008577)),
-                    enabled = !viewModel.estaCargando
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF008577))
                 ) {
-                    if (viewModel.estaCargando) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                    } else {
-                        Text("Guardar Registro", fontWeight = FontWeight.Bold)
-                    }
+                    Text("Guardar Registro", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun CampoEntrada(valor: String, onValueChange: (String) -> Unit, placeholder: String, k: KeyboardType = KeyboardType.Text) {
+    OutlinedTextField(
+        value = valor,
+        onValueChange = onValueChange,
+        placeholder = { Text(placeholder, color = Color.LightGray) },
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp),
+        keyboardOptions = KeyboardOptions(keyboardType = k),
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF008577),
+            unfocusedBorderColor = Color(0xFFE0E0E0),
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black
+        )
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SelectorTipo(viewModel: RegistrarAnimalViewModel) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = viewModel.tipo,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.menuAnchor().fillMaxWidth().padding(top = 8.dp, bottom = 16.dp),
+            shape = RoundedCornerShape(12.dp)
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            viewModel.tiposDisponibles.forEach { opcion ->
+                DropdownMenuItem(text = { Text(opcion) }, onClick = { viewModel.tipo = opcion; expanded = false })
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SelectorOrigen(viewModel: RegistrarAnimalViewModel) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = viewModel.origen,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.menuAnchor().fillMaxWidth().padding(top = 8.dp, bottom = 16.dp),
+            shape = RoundedCornerShape(12.dp)
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            viewModel.origenesDisponibles.forEach { opcion ->
+                DropdownMenuItem(text = { Text(opcion) }, onClick = { viewModel.origen = opcion; expanded = false })
             }
         }
     }
