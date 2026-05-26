@@ -21,23 +21,48 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.equipo.miranchopro.data.api.ForecastDay
 import com.equipo.miranchopro.interfaz.navegacion.Pantalla
 import com.equipo.miranchopro.modelovista.InventarioViewModel
 import com.equipo.miranchopro.modelovista.TareasViewModel
 import com.equipo.miranchopro.modelovista.SaludViewModel
+import com.equipo.miranchopro.modelovista.ClimaViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun PantallaInicio(
     navController: NavController,
     inventarioViewModel: InventarioViewModel,
     saludViewModel: SaludViewModel,
-    tareasViewModel: TareasViewModel = viewModel()
+    tareasViewModel: TareasViewModel = viewModel(),
+    climaViewModel: ClimaViewModel = viewModel()
 ) {
     val totalAnimales = inventarioViewModel.listaAnimales.size
     val tareasPendientes = tareasViewModel.listaTareas.count { !it.estaHecha }
     val medicamentos by saludViewModel.listaMedicamentos.collectAsState()
     val medicamentosBajoStock = medicamentos.count { it.stock < 5 }
     var menuExpandido by remember { mutableStateOf(false) }
+
+    val climaResponse by climaViewModel.climaState.collectAsState()
+    val cargandoClima by climaViewModel.cargando.collectAsState()
+    val errorClima by climaViewModel.error.collectAsState()
+
+    LaunchedEffect(Unit) {
+        climaViewModel.obtenerClima()
+    }
+
+    val sugerenciaClima = remember(climaResponse) {
+        val condicion = climaResponse?.forecast?.forecastday?.firstOrNull()?.day?.condition?.text?.lowercase() ?: ""
+        when {
+            condicion.contains("soleado") || condicion.contains("despejado") -> "El clima se presta para arrear becerros."
+            condicion.contains("lluvia") || condicion.contains("llovizna") -> "Día lluvioso: Asegúrate de que el ganado joven esté bajo techo."
+            condicion.contains("nublado") -> "Cielo nublado: Buen momento para revisar las cercas y el perímetro."
+            condicion.contains("tormenta") -> "Alerta de tormenta: Revisa los niveles de agua y asegura los cobertizos."
+            else -> "¡Buen día para trabajar en el rancho!"
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -117,6 +142,27 @@ fun PantallaInicio(
             contentPadding = PaddingValues(top = 20.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item {
+                Column(modifier = Modifier.padding(bottom = 4.dp)) {
+                    Text(
+                        text = "¡Hola, Bienvenido!",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.Black,
+                        letterSpacing = (-0.5).sp
+                    )
+                    if (!cargandoClima && climaResponse != null) {
+                        Text(
+                            text = sugerenciaClima,
+                            fontSize = 14.sp,
+                            color = Color(0xFF008577),
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
+
             item { Text("ESTADO ACTUAL", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 1.5.sp) }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -124,6 +170,7 @@ fun PantallaInicio(
                     CardResumenInicio("Tareas", tareasPendientes.toString(), Icons.Default.ListAlt, Color(0xFFFFA000), Modifier.weight(1f)) { navController.navigate(Pantalla.Tareas.ruta) }
                 }
             }
+            
             if (medicamentosBajoStock > 0) {
                 item {
                     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))) {
@@ -134,6 +181,49 @@ fun PantallaInicio(
                     }
                 }
             }
+
+            item { Text("PRONÓSTICO DEL CLIMA (3 DÍAS)", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 1.5.sp) }
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    if (cargandoClima) {
+                        Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFF008577))
+                        }
+                    } else if (errorClima != null) {
+                        Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                            Text(errorClima!!, color = Color.Red, fontSize = 12.sp)
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.padding(vertical = 16.dp).fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val pronostico = climaResponse?.forecast?.forecastday ?: emptyList()
+                            pronostico.forEachIndexed { index, dia ->
+                                Box(
+                                    modifier = Modifier.weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    ItemClimaApi(dia)
+                                }
+                                if (index < pronostico.size - 1) {
+                                    VerticalDivider(
+                                        modifier = Modifier.height(40.dp),
+                                        thickness = 1.dp,
+                                        color = Color.LightGray.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             item { Text("ACCESO RÁPIDO", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 1.5.sp) }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -144,6 +234,40 @@ fun PantallaInicio(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ItemClimaApi(forecast: ForecastDay) {
+    val diaNombre = remember(forecast.date) {
+        try {
+            val formatInput = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val date = formatInput.parse(forecast.date)
+            val today = Calendar.getInstance()
+            val forecastCal = Calendar.getInstance().apply { time = date!! }
+            
+            if (today.get(Calendar.DAY_OF_YEAR) == forecastCal.get(Calendar.DAY_OF_YEAR)) {
+                "Hoy"
+            } else {
+                val formatOutput = SimpleDateFormat("EEE", Locale("es", "MX"))
+                formatOutput.format(date).replaceFirstChar { it.uppercase() }
+            }
+        } catch (e: Exception) {
+            forecast.date
+        }
+    }
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = diaNombre, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+        Spacer(modifier = Modifier.height(8.dp))
+        AsyncImage(
+            model = "https:${forecast.day.condition.icon}",
+            contentDescription = null,
+            modifier = Modifier.size(32.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "${forecast.day.avgTempC.toInt()}°C", fontSize = 16.sp, fontWeight = FontWeight.Black)
+        Text(text = forecast.day.condition.text, fontSize = 10.sp, color = Color.Gray, maxLines = 1)
     }
 }
 
