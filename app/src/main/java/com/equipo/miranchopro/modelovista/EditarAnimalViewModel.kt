@@ -1,5 +1,7 @@
 package com.equipo.miranchopro.modelovista
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,6 +12,10 @@ import com.equipo.miranchopro.data.repository.AnimalRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
 
 class EditarAnimalViewModel(
     private val repositorio: AnimalRepository
@@ -18,6 +24,7 @@ class EditarAnimalViewModel(
     var idArete by mutableStateOf("")
         private set
 
+    var nombre by mutableStateOf("")
     var peso by mutableStateOf("")
     var color by mutableStateOf("")
     var marcas by mutableStateOf("")
@@ -25,7 +32,14 @@ class EditarAnimalViewModel(
     var raza by mutableStateOf("")
     var edad by mutableStateOf("")
     var ubicacion by mutableStateOf("")
+    var origen by mutableStateOf("")
     var estado by mutableStateOf("")
+    var caracteristica by mutableStateOf("")
+    var fechaNacimiento by mutableStateOf("")
+    var horaNacimiento by mutableStateOf("")
+    
+    var fotoUri by mutableStateOf<Uri?>(null)
+    var fotoPath by mutableStateOf<String?>(null)
 
     var estaCargando by mutableStateOf(false)
         private set
@@ -33,7 +47,6 @@ class EditarAnimalViewModel(
     var mensajeError by mutableStateOf<String?>(null)
         private set
 
-    // Estados para el proceso de Baja
     var mostrarDialogoBaja by mutableStateOf(false)
     var motivoBaja by mutableStateOf("")
     var situacionMuerte by mutableStateOf("")
@@ -54,6 +67,7 @@ class EditarAnimalViewModel(
             val animal = repositorio.getAnimalById(id)
             if (animal != null) {
                 idArete = animal.idArete
+                nombre = animal.nombre
                 peso = animal.peso.toString()
                 color = animal.color
                 marcas = animal.marcas
@@ -61,13 +75,37 @@ class EditarAnimalViewModel(
                 raza = animal.raza
                 edad = animal.edad
                 ubicacion = animal.ubicacion
+                origen = animal.origen
                 estado = animal.estado
+                caracteristica = animal.caracteristica
+                fotoPath = animal.fotoPath
+                
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                fechaNacimiento = sdf.format(Date(animal.fechaRegistro))
+                horaNacimiento = animal.horaNacimiento ?: "00:00:00"
             }
             estaCargando = false
         }
     }
 
-    fun actualizarAnimal() {
+    private fun guardarImagenEnInterno(context: Context, uri: Uri): String? {
+        return try {
+            val fileName = "animal_${idArete}.jpg"
+            val folder = File(context.filesDir, "fotos_animales").apply { if (!exists()) mkdirs() }
+            val destFile = File(folder, fileName)
+            
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(destFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            destFile.absolutePath
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun actualizarAnimal(context: Context) {
         if (peso.isBlank() || color.isBlank()) {
             mensajeError = "El peso y el color son obligatorios"
             return
@@ -79,11 +117,16 @@ class EditarAnimalViewModel(
             return
         }
 
+        fotoUri?.let { uri ->
+            fotoPath = guardarImagenEnInterno(context, uri)
+        }
+
         mensajeError = null
         viewModelScope.launch {
             estaCargando = true
             val animalActualizado = Animal(
                 idArete = idArete,
+                nombre = nombre,
                 peso = pesoDouble,
                 color = color,
                 marcas = marcas,
@@ -91,7 +134,11 @@ class EditarAnimalViewModel(
                 raza = raza,
                 edad = edad,
                 ubicacion = ubicacion,
-                estado = estado
+                origen = origen,
+                estado = estado,
+                caracteristica = caracteristica,
+                fotoPath = fotoPath,
+                horaNacimiento = horaNacimiento
             )
             val exito = repositorio.updateAnimal(animalActualizado)
             estaCargando = false
@@ -105,36 +152,18 @@ class EditarAnimalViewModel(
 
     fun confirmarBaja() {
         if (motivoBaja.isBlank()) return
-        
         viewModelScope.launch {
             estaCargando = true
-            
-            // CP-06.2: Simulación de validación de tareas/tratamientos pendientes
-            // En el futuro, aquí consultaríamos al repositorio médico
-            val tieneTratamientosActivos = false 
-            
-            if (tieneTratamientosActivos) {
-                _eventoUI.emit(EventoUI.Error("No se puede dar de baja: El animal tiene tratamientos médicos activos."))
-                estaCargando = false
-                return@launch
-            }
-
             val animal = repositorio.getAnimalById(idArete)
             if (animal != null) {
                 val detalleBaja = when (motivoBaja) {
-                    "Muerto" -> {
-                        val situacion = if (situacionMuerte == "Otro") otroMotivoMuerte else situacionMuerte
-                        "Baja por muerte ($situacion)"
-                    }
+                    "Muerto" -> "Baja por muerte (${if (situacionMuerte == "Otro") otroMotivoMuerte else situacionMuerte})"
                     else -> "Baja por $motivoBaja"
                 }
-
-                // Actualizamos el estado a "Baja"
                 val animalDeBaja = animal.copy(
                     estado = "Baja",
                     marcas = "${animal.marcas} | Detalle: $detalleBaja"
                 )
-                
                 val exito = repositorio.updateAnimal(animalDeBaja)
                 estaCargando = false
                 if (exito) {

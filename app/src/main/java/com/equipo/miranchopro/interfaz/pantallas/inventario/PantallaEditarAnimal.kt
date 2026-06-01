@@ -1,25 +1,42 @@
 package com.equipo.miranchopro.interfaz.pantallas.inventario
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.equipo.miranchopro.modelovista.EditarAnimalViewModel
 import kotlinx.coroutines.flow.collectLatest
+
+private val ColorTituloSeccion = Color(0xFF00897B)
+private val ColorIconoGris = Color(0xFF90A4AE)
+private val ColorTextoEtiqueta = Color(0xFF9E9E9E)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +45,12 @@ fun PantallaEditarAnimal(
     viewModel: EditarAnimalViewModel = viewModel(),
     alVolver: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri -> if (uri != null) viewModel.fotoUri = uri }
 
     LaunchedEffect(idArete) {
         viewModel.cargarAnimal(idArete)
@@ -39,6 +61,7 @@ fun PantallaEditarAnimal(
             when (evento) {
                 is EditarAnimalViewModel.EventoUI.Exito -> {
                     snackbarHostState.showSnackbar("Animal actualizado correctamente")
+                    alVolver()
                 }
                 is EditarAnimalViewModel.EventoUI.BajaExitosa -> {
                     snackbarHostState.showSnackbar("Animal dado de baja")
@@ -52,168 +75,172 @@ fun PantallaEditarAnimal(
     }
 
     Scaffold(
+        containerColor = Color(0xFFFBFBFB),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Editar Animal") },
+            CenterAlignedTopAppBar(
+                title = { Text("Ficha del Animal", fontWeight = FontWeight.Bold, color = Color(0xFFB0BEC5)) },
                 navigationIcon = {
                     IconButton(onClick = alVolver) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color(0xFFB0BEC5))
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.mostrarDialogoBaja = true }) {
                         Icon(Icons.Default.Delete, contentDescription = "Dar de baja", tint = Color.Red)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { relleno ->
-        if (viewModel.estaCargando && viewModel.idArete.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .padding(relleno)
-                    .padding(16.dp)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "ID Arete: ${viewModel.idArete}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                OutlinedTextField(
-                    value = viewModel.peso,
-                    onValueChange = { viewModel.peso = it },
-                    label = { Text("Peso (kg)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = viewModel.color,
-                    onValueChange = { viewModel.color = it },
-                    label = { Text("Color") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = viewModel.marcas,
-                    onValueChange = { viewModel.marcas = it },
-                    label = { Text("Marcas") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
-                )
-
-                if (viewModel.mensajeError != null) {
-                    Text(
-                        text = viewModel.mensajeError!!,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Button(
-                    onClick = { viewModel.actualizarAnimal() },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !viewModel.estaCargando,
-                    shape = RoundedCornerShape(12.dp)
+        Column(
+            modifier = Modifier
+                .padding(relleno)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            
+            // --- SECCIÓN: FOTO ---
+            CardSeccionEditar("Foto del Animal") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFFF5F5F5))
+                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(16.dp))
+                        .clickable { galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                    contentAlignment = Alignment.Center
                 ) {
-                    if (viewModel.estaCargando) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    if (viewModel.fotoUri != null || viewModel.fotoPath != null) {
+                        AsyncImage(
+                            model = viewModel.fotoUri ?: viewModel.fotoPath,
+                            contentDescription = "Foto",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        IconButton(
+                            onClick = { viewModel.fotoUri = null; viewModel.fotoPath = null },
+                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        ) { Icon(Icons.Default.Close, null, tint = Color.White) }
                     } else {
-                        Text("Actualizar Datos")
+                        Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
                     }
                 }
-
-                OutlinedButton(
-                    onClick = { viewModel.mostrarDialogoBaja = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Dar de Baja")
-                }
             }
+
+            // --- SECCIÓN: IDENTIFICACIÓN (LECTURA) ---
+            CardSeccionEditar("Identificación") {
+                InfoItemLecturaFicha("ID / Arete", viewModel.idArete, Icons.Outlined.Tag)
+                InfoItemLecturaFicha("Nombre", viewModel.nombre, Icons.Outlined.Badge)
+                InfoItemLecturaFicha("Tipo", viewModel.tipo, Icons.Outlined.Pets)
+                InfoItemLecturaFicha("Raza", viewModel.raza, Icons.Outlined.Category)
+                InfoItemLecturaFicha("Edad Calculada", viewModel.edad, Icons.Outlined.Cake)
+            }
+
+            // --- SECCIÓN: NACIMIENTO Y ORIGEN (DISEÑO SOLICITADO) ---
+            CardSeccionEditar("Nacimiento y Origen") {
+                InfoItemLecturaFicha("Ubicación / Lote", viewModel.ubicacion, Icons.Outlined.LocationOn)
+                InfoItemLecturaFicha("Origen", viewModel.origen, Icons.Outlined.AutoAwesome)
+                InfoItemLecturaFicha("Fecha de Registro", viewModel.fechaNacimiento, Icons.Outlined.CalendarToday)
+                InfoItemLecturaFicha("Hora de Nacimiento", viewModel.horaNacimiento, Icons.Outlined.AccessTime)
+            }
+
+            // --- SECCIÓN: DATOS EDITABLES ---
+            CardSeccionEditar("Características Físicas") {
+                CampoEditable("Peso (kg)", viewModel.peso, { viewModel.peso = it }, KeyboardType.Decimal)
+                CampoEditable("Color", viewModel.color, { viewModel.color = it })
+                CampoEditable("Marcas / Señas", viewModel.marcas, { viewModel.marcas = it })
+                CampoEditable("Características / Notas", viewModel.caracteristica, { viewModel.caracteristica = it })
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = { viewModel.actualizarAnimal(context) },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B))
+            ) {
+                Text("ACTUALIZAR REGISTRO", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+            
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 
     if (viewModel.mostrarDialogoBaja) {
-        AlertDialog(
-            onDismissRequest = { viewModel.mostrarDialogoBaja = false },
-            title = { Text("Dar de baja animal") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Seleccione el motivo de la baja:")
+        DialogoBajaAnimal(viewModel)
+    }
+}
 
-                    val motivos = listOf("Vendido", "Muerto", "Agregado accidentalmente")
-                    motivos.forEach { motivo ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.motivoBaja = motivo }
-                        ) {
-                            RadioButton(
-                                selected = (viewModel.motivoBaja == motivo),
-                                onClick = { viewModel.motivoBaja = motivo }
-                            )
-                            Text(motivo)
-                        }
-                    }
+@Composable
+fun CardSeccionEditar(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(text = titulo, color = ColorTituloSeccion, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(16.dp))
+            contenido()
+        }
+    }
+}
 
-                    if (viewModel.motivoBaja == "Muerto") {
-                        Text("Situación de la muerte:", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
-                        val situaciones = listOf("Medica", "Accidente", "Otro")
-                        situaciones.forEach { situacion ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { viewModel.situacionMuerte = situacion }
-                            ) {
-                                RadioButton(
-                                    selected = (viewModel.situacionMuerte == situacion),
-                                    onClick = { viewModel.situacionMuerte = situacion }
-                                )
-                                Text(situacion)
-                            }
-                        }
+@Composable
+private fun InfoItemLecturaFicha(label: String, value: String, icon: ImageVector) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = ColorIconoGris, modifier = Modifier.size(24.dp))
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(label, fontSize = 12.sp, color = ColorTextoEtiqueta)
+            Text(value, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        }
+    }
+}
 
-                        if (viewModel.situacionMuerte == "Otro") {
-                            OutlinedTextField(
-                                value = viewModel.otroMotivoMuerte,
-                                onValueChange = { viewModel.otroMotivoMuerte = it },
-                                label = { Text("Especifique") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.confirmarBaja() },
-                    enabled = viewModel.motivoBaja.isNotBlank() &&
-                            (viewModel.motivoBaja != "Muerto" || viewModel.situacionMuerte.isNotBlank()),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Text("Confirmar Baja")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.mostrarDialogoBaja = false }) {
-                    Text("Cancelar")
-                }
-            }
+@Composable
+fun CampoEditable(label: String, valor: String, onValueChange: (String) -> Unit, k: KeyboardType = KeyboardType.Text) {
+    Column(modifier = Modifier.padding(bottom = 12.dp)) {
+        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        OutlinedTextField(
+            value = valor, onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = k),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ColorTituloSeccion)
         )
     }
+}
+
+@Composable
+fun DialogoBajaAnimal(viewModel: com.equipo.miranchopro.modelovista.EditarAnimalViewModel) {
+    AlertDialog(
+        onDismissRequest = { viewModel.mostrarDialogoBaja = false },
+        title = { Text("Dar de baja animal") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Seleccione el motivo:")
+                val motivos = listOf("Vendido", "Muerto", "Agregado accidentalmente")
+                motivos.forEach { motivo ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { viewModel.motivoBaja = motivo }) {
+                        RadioButton(selected = (viewModel.motivoBaja == motivo), onClick = { viewModel.motivoBaja = motivo })
+                        Text(motivo)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { viewModel.confirmarBaja() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) {
+                Text("Confirmar")
+            }
+        },
+        dismissButton = { TextButton(onClick = { viewModel.mostrarDialogoBaja = false }) { Text("Volver") } }
+    )
 }

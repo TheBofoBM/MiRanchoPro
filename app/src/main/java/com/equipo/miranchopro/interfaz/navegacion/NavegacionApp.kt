@@ -50,6 +50,7 @@ import com.equipo.miranchopro.interfaz.pantallas.tareas.PantallaTareas
 import com.equipo.miranchopro.interfaz.pantallas.trabajadores.PantallaTrabajadores
 import com.equipo.miranchopro.interfaz.pantallas.perfil.PantallaPerfil
 import com.equipo.miranchopro.interfaz.pantallas.configuracion.PantallaConfiguracion
+import com.equipo.miranchopro.interfaz.pantallas.recuperacion.RecuperarContrasenaScreen
 import com.equipo.miranchopro.modelovista.*
 import com.equipo.miranchopro.utils.ShakeDetector
 import com.equipo.miranchopro.viewmodel.*
@@ -58,6 +59,7 @@ import kotlinx.coroutines.launch
 sealed class Pantalla(val ruta: String) {
     object Login : Pantalla("login")
     object Registro : Pantalla("registro")
+    object RecuperarContrasena : Pantalla("recuperar_contrasena")
     object Inventario : Pantalla("inventario")
     object RegistrarAnimal : Pantalla("registrar_animal?tipo={tipo}&idTemp={idTemp}") {
         fun crearRuta(tipo: String? = null, idTemp: String? = null): String {
@@ -122,7 +124,7 @@ fun NavegacionApp() {
     val shakeDetector = remember { 
         ShakeDetector { 
             val rutaActual = navController.currentDestination?.route
-            if (rutaActual != null && rutaActual != Pantalla.Login.ruta && rutaActual != Pantalla.Registro.ruta) {
+            if (rutaActual != null && rutaActual != Pantalla.Login.ruta && rutaActual != Pantalla.Registro.ruta && rutaActual != Pantalla.RecuperarContrasena.ruta) {
                 mostrarShakeOverlay = true 
             }
         } 
@@ -135,7 +137,7 @@ fun NavegacionApp() {
         onDispose { sensorManager.unregisterListener(shakeDetector) }
     }
 
-    val pantallasSinBarra = listOf(Pantalla.Login.ruta, Pantalla.Registro.ruta)
+    val pantallasSinBarra = listOf(Pantalla.Login.ruta, Pantalla.Registro.ruta, Pantalla.RecuperarContrasena.ruta)
     val mostrarBarra = currentDestination?.route !in pantallasSinBarra
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -194,15 +196,29 @@ fun NavegacionApp() {
             ) {
                 composable(Pantalla.Login.ruta) {
                     val loginViewModel: LoginViewModel = viewModel { LoginViewModel(database.usuarioDao()) }
-                    LoginScreen(viewModel = loginViewModel, onLoginExitoso = {
-                        navController.navigate(Pantalla.Inicio.ruta) { popUpTo(Pantalla.Login.ruta) { inclusive = true } }
-                    }, onRegisterClick = { navController.navigate(Pantalla.Registro.ruta) })
+                    LoginScreen(
+                        viewModel = loginViewModel, 
+                        onLoginExitoso = {
+                            navController.navigate(Pantalla.Inicio.ruta) { popUpTo(Pantalla.Login.ruta) { inclusive = true } }
+                        }, 
+                        onRegisterClick = { navController.navigate(Pantalla.Registro.ruta) },
+                        onForgotPassword = { navController.navigate(Pantalla.RecuperarContrasena.ruta) }
+                    )
                 }
                 composable(Pantalla.Registro.ruta) {
                     val registroViewModel: RegistroViewModel = viewModel { RegistroViewModel(database.usuarioDao()) }
                     RegistroScreen(viewModel = registroViewModel, onRegistroExitoso = {
                         navController.navigate(Pantalla.Inicio.ruta) { popUpTo(Pantalla.Login.ruta) { inclusive = true } }
                     }, onIrALogin = { navController.popBackStack() } )
+                }
+                composable(Pantalla.RecuperarContrasena.ruta) {
+                    val recViewModel: RecuperarContrasenaViewModel = viewModel { 
+                        RecuperarContrasenaViewModel(database.usuarioDao()) 
+                    }
+                    RecuperarContrasenaScreen(
+                        onVolverClick = { navController.popBackStack() },
+                        viewModel = recViewModel
+                    )
                 }
                 composable(Pantalla.Inicio.ruta) {
                     val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
@@ -285,7 +301,7 @@ fun NavegacionApp() {
                     val regViewModel: RegistrarAnimalViewModel = viewModel { RegistrarAnimalViewModel(repoAnimales) }
                     LaunchedEffect(entrada.arguments) {
                         entrada.arguments?.getString("idTemp")?.let { regViewModel.cargarParaCompletar(it) } 
-                            ?: entrada.arguments?.getString("tipo")?.let { regViewModel.tipo = it }
+                            ?: entrada.arguments?.getString("tipo")?.let { regViewModel.tipo = it ?: "Becerro" }
                     }
                     PantallaRegistrarAnimal(viewModel = regViewModel, alFinalizar = { navController.popBackStack() })
                 }

@@ -41,7 +41,7 @@ fun PantallaInicio(
 ) {
     val totalAnimales = inventarioViewModel.listaAnimales.size
     val tareasPendientes = tareasViewModel.listaTareas.count { !it.estaHecha }
-    val medicamentos by saludViewModel.listaMedicamentos.collectAsState()
+    val medicamentos by saludViewModel.listaMedicamentos.collectAsState(initial = emptyList())
     val medicamentosBajoStock = medicamentos.count { it.stock < 5 }
     var menuExpandido by remember { mutableStateOf(false) }
 
@@ -84,28 +84,11 @@ fun PantallaInicio(
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Mi Rancho",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White,
-                            letterSpacing = (-1).sp
-                        )
+                        Text(text = "Mi Rancho", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color.White, letterSpacing = (-1).sp)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "PRO",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF00BFA5),
-                            letterSpacing = (-1).sp
-                        )
+                        Text(text = "PRO", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color(0xFF00BFA5), letterSpacing = (-1).sp)
                     }
-                    Text(
-                        text = "Panel de Control",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Gray
-                    )
+                    Text(text = "Panel de Control", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.Gray)
                 }
 
                 Box {
@@ -113,25 +96,10 @@ fun PantallaInicio(
                         Icon(Icons.Default.AccountCircle, "Menú", tint = Color.White, modifier = Modifier.size(30.dp))
                     }
                     DropdownMenu(expanded = menuExpandido, onDismissRequest = { menuExpandido = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Perfil") },
-                            onClick = { menuExpandido = false; navController.navigate(Pantalla.Perfil.ruta) },
-                            leadingIcon = { Icon(Icons.Default.Person, null) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Configuración") },
-                            onClick = { menuExpandido = false; navController.navigate(Pantalla.Configuracion.ruta) },
-                            leadingIcon = { Icon(Icons.Default.Settings, null) }
-                        )
+                        DropdownMenuItem(text = { Text("Perfil") }, onClick = { menuExpandido = false; navController.navigate(Pantalla.Perfil.ruta) }, leadingIcon = { Icon(Icons.Default.Person, null) })
+                        DropdownMenuItem(text = { Text("Configuración") }, onClick = { menuExpandido = false; navController.navigate(Pantalla.Configuracion.ruta) }, leadingIcon = { Icon(Icons.Default.Settings, null) })
                         HorizontalDivider()
-                        DropdownMenuItem(
-                            text = { Text("Cerrar sesión") },
-                            onClick = { 
-                                menuExpandido = false
-                                navController.navigate(Pantalla.Login.ruta) { popUpTo(0) }
-                            },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) }
-                        )
+                        DropdownMenuItem(text = { Text("Cerrar sesión") }, onClick = { menuExpandido = false; navController.navigate(Pantalla.Login.ruta) { popUpTo(0) } }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) })
                     }
                 }
             }
@@ -144,26 +112,13 @@ fun PantallaInicio(
         ) {
             item {
                 Column(modifier = Modifier.padding(bottom = 4.dp)) {
-                    Text(
-                        text = "¡Hola, Bienvenido!",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.Black,
-                        letterSpacing = (-0.5).sp
-                    )
+                    Text(text = "¡Hola, Bienvenido!", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color.Black)
                     if (!cargandoClima && climaResponse != null) {
-                        Text(
-                            text = sugerenciaClima,
-                            fontSize = 14.sp,
-                            color = Color(0xFF008577),
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+                        Text(text = sugerenciaClima, fontSize = 14.sp, color = Color(0xFF008577), fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
                     }
                 }
             }
 
-            item { Text("ESTADO ACTUAL", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 1.5.sp) }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     CardResumenInicio("Animales", totalAnimales.toString(), Icons.Default.Pets, Color(0xFF008577), Modifier.weight(1f)) { navController.navigate(Pantalla.Inventario.ruta) }
@@ -171,18 +126,6 @@ fun PantallaInicio(
                 }
             }
             
-            if (medicamentosBajoStock > 0) {
-                item {
-                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Warning, null, tint = Color.Red); Spacer(modifier = Modifier.width(12.dp))
-                            Text("$medicamentosBajoStock medicamentos con stock bajo", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                    }
-                }
-            }
-
-            item { Text("PRONÓSTICO DEL CLIMA (3 DÍAS)", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 1.5.sp) }
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -194,29 +137,19 @@ fun PantallaInicio(
                         Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = Color(0xFF008577))
                         }
-                    } else if (errorClima != null) {
-                        Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                            Text(errorClima!!, color = Color.Red, fontSize = 12.sp)
-                        }
                     } else {
-                        Row(
-                            modifier = Modifier.padding(vertical = 16.dp).fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val pronostico = climaResponse?.forecast?.forecastday ?: emptyList()
-                            pronostico.forEachIndexed { index, dia ->
-                                Box(
-                                    modifier = Modifier.weight(1f),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    ItemClimaApi(dia)
-                                }
-                                if (index < pronostico.size - 1) {
-                                    VerticalDivider(
-                                        modifier = Modifier.height(40.dp),
-                                        thickness = 1.dp,
-                                        color = Color.LightGray.copy(alpha = 0.5f)
-                                    )
+                        val pronostico = climaResponse?.forecast?.forecastday ?: emptyList()
+                        if (pronostico.isEmpty()) {
+                            Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                                Text("Información del clima no disponible", color = Color.Gray, fontSize = 12.sp)
+                            }
+                        } else {
+                            Row(modifier = Modifier.padding(vertical = 16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                pronostico.forEachIndexed { index, dia ->
+                                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) { ItemClimaApi(dia) }
+                                    if (index < pronostico.size - 1) {
+                                        VerticalDivider(modifier = Modifier.height(40.dp), thickness = 1.dp, color = Color.LightGray.copy(alpha = 0.5f))
+                                    }
                                 }
                             }
                         }
@@ -224,12 +157,10 @@ fun PantallaInicio(
                 }
             }
 
-            item { Text("ACCESO RÁPIDO", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 1.5.sp) }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     ItemAccesoRapido("Inventario de Ganado", "Ver y registrar animales", Icons.Default.Agriculture, Color(0xFF4CAF50)) { navController.navigate(Pantalla.Inventario.ruta) }
                     ItemAccesoRapido("Salud Animal", "Control médico y stock", Icons.Default.MedicalServices, Color(0xFF2196F3)) { navController.navigate(Pantalla.Salud.ruta) }
-                    ItemAccesoRapido("Gestión de Lotes", "Ubicación de animales", Icons.Default.GridView, Color(0xFF9C27B0)) { navController.navigate(Pantalla.Lotes.ruta) }
                     ItemAccesoRapido("Reportes", "Estadísticas del rancho", Icons.Default.Assessment, Color(0xFF607D8B)) { navController.navigate(Pantalla.Reportes.ruta) }
                 }
             }
@@ -242,32 +173,25 @@ fun ItemClimaApi(forecast: ForecastDay) {
     val diaNombre = remember(forecast.date) {
         try {
             val formatInput = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val date = formatInput.parse(forecast.date)
+            val date = formatInput.parse(forecast.date ?: "")
             val today = Calendar.getInstance()
-            val forecastCal = Calendar.getInstance().apply { time = date!! }
+            val forecastCal = Calendar.getInstance().apply { if (date != null) time = date }
             
-            if (today.get(Calendar.DAY_OF_YEAR) == forecastCal.get(Calendar.DAY_OF_YEAR)) {
-                "Hoy"
-            } else {
-                val formatOutput = SimpleDateFormat("EEE", Locale("es", "MX"))
-                formatOutput.format(date).replaceFirstChar { it.uppercase() }
-            }
-        } catch (e: Exception) {
-            forecast.date
-        }
+            if (today.get(Calendar.DAY_OF_YEAR) == forecastCal.get(Calendar.DAY_OF_YEAR)) "Hoy"
+            else SimpleDateFormat("EEE", Locale("es", "MX")).format(date!!).replaceFirstChar { it.uppercase() }
+        } catch (e: Exception) { "Hoy" }
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = diaNombre, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
         Spacer(modifier = Modifier.height(8.dp))
         AsyncImage(
-            model = "https:${forecast.day.condition.icon}",
+            model = "https:${forecast.day?.condition?.icon ?: ""}",
             contentDescription = null,
             modifier = Modifier.size(32.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "${forecast.day.avgTempC.toInt()}°C", fontSize = 16.sp, fontWeight = FontWeight.Black)
-        Text(text = forecast.day.condition.text, fontSize = 10.sp, color = Color.Gray, maxLines = 1)
+        Text(text = "${forecast.day?.avgTempC?.toInt() ?: 0}°C", fontSize = 16.sp, fontWeight = FontWeight.Black)
     }
 }
 

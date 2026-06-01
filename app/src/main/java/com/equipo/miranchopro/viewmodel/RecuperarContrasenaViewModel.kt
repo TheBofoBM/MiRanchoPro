@@ -7,43 +7,81 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.equipo.miranchopro.data.local.dao.UsuarioDao
 import kotlinx.coroutines.launch
+import kotlin.random.Random
+
+enum class PasoRecuperacion {
+    INGRESAR_CORREO,
+    VERIFICAR_CODIGO,
+    NUEVA_CONTRASENA,
+    EXITO
+}
 
 class RecuperarContrasenaViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
     var correo by mutableStateOf("")
+    var codigoIngresado by mutableStateOf("")
+    var nuevaContrasena by mutableStateOf("")
+    var confirmarContrasena by mutableStateOf("")
 
+    var pasoActual by mutableStateOf(PasoRecuperacion.INGRESAR_CORREO)
     var mensajeUI by mutableStateOf<String?>(null)
         private set
-    var correoEnviado by mutableStateOf(false)
-        private set
+    
+    private var codigoGenerado by mutableStateOf("")
 
     fun limpiarMensaje() { mensajeUI = null }
 
-    /**
-     * CU-03: Recuperar contraseña
-     */
-    fun enviarEnlaceRecuperacion(simularFalloServidor: Boolean) {
+    // Paso 1: Validar correo y enviar código
+    fun enviarCodigo(simularFallo: Boolean) {
         if (correo.isBlank()) {
-            mensajeUI = "Por favor, ingresa tu correo electrónico"
+            mensajeUI = "Ingresa tu correo"
+            return
+        }
+        if (simularFallo) {
+            mensajeUI = "Ex-01: El servicio de correo no responde."
             return
         }
 
-        // CP-03.3 (Excepción): Falla el servidor de correos
-        if (simularFalloServidor) {
-            mensajeUI = "Error: No se pudo enviar el email. Intenta más tarde."
-            return
-        }
-
-        // Ejecutamos la búsqueda en segundo plano (Room)
         viewModelScope.launch {
-            val usuario = usuarioDao.buscarPorCorreo(correo.trim())
-
+            val usuario = usuarioDao.buscarPorCorreo(correo.trim().lowercase())
             if (usuario == null) {
-                // CP-03.2 (Alternativo): Correo no existe en la BD
-                mensajeUI = "El correo no coincide con ninguna cuenta registrada."
+                mensajeUI = "El correo no está registrado."
             } else {
-                // CP-03.1 (Normal): Correo válido, se envía enlace
-                mensajeUI = "Se ha enviado un enlace de recuperación a tu correo."
-                correoEnviado = true
+                // Generar código de 6 dígitos
+                codigoGenerado = (100000..999999).random().toString()
+                // Simulamos el envío (en una app real iría al email)
+                mensajeUI = "Código enviado. (Para prueba usa: $codigoGenerado)"
+                pasoActual = PasoRecuperacion.VERIFICAR_CODIGO
+            }
+        }
+    }
+
+    // Paso 2: Validar código (FA-01)
+    fun verificarCodigo() {
+        if (codigoIngresado == codigoGenerado) {
+            pasoActual = PasoRecuperacion.NUEVA_CONTRASENA
+        } else {
+            mensajeUI = "FA-01: Código incorrecto. Intenta de nuevo."
+        }
+    }
+
+    // Paso 3: Guardar nueva contraseña
+    fun restablecerContrasena() {
+        if (nuevaContrasena.length < 6) {
+            mensajeUI = "La contraseña debe tener al menos 6 caracteres"
+            return
+        }
+        if (nuevaContrasena != confirmarContrasena) {
+            mensajeUI = "Las contraseñas no coinciden"
+            return
+        }
+
+        viewModelScope.launch {
+            val usuario = usuarioDao.buscarPorCorreo(correo.trim().lowercase())
+            if (usuario != null) {
+                val usuarioActualizado = usuario.copy(contrasena = nuevaContrasena)
+                usuarioDao.actualizarUsuario(usuarioActualizado)
+                pasoActual = PasoRecuperacion.EXITO
+                mensajeUI = "Contraseña actualizada con éxito"
             }
         }
     }

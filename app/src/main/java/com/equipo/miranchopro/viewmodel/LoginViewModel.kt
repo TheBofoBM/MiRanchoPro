@@ -16,12 +16,15 @@ class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
         private set
     var loginExitoso by mutableStateOf(false)
         private set
+        
+    var estaCargando by mutableStateOf(false)
+        private set
 
     fun limpiarMensaje() { mensajeError = null }
 
     fun iniciarSesion(simularErrorConexion: Boolean) {
         if (simularErrorConexion) {
-            mensajeError = "Sin conexión al servidor" // CP-01.3
+            mensajeError = "Sin conexión al servidor"
             return
         }
 
@@ -30,14 +33,19 @@ class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
             return
         }
 
-        // Consultamos la BD en segundo plano
+        estaCargando = true
         viewModelScope.launch {
-            val usuario = usuarioDao.iniciarSesion(correo.trim(), contrasena)
-
-            if (usuario != null) {
-                loginExitoso = true // CP-01.1
-            } else {
-                mensajeError = "Usuario o contraseña incorrectos" // CP-01.2
+            try {
+                val usuario = usuarioDao.iniciarSesion(correo.trim(), contrasena)
+                if (usuario != null) {
+                    loginExitoso = true
+                } else {
+                    mensajeError = "Usuario o contraseña incorrectos"
+                }
+            } catch (e: Exception) {
+                mensajeError = "Error al conectar con la base de datos"
+            } finally {
+                estaCargando = false
             }
         }
     }
