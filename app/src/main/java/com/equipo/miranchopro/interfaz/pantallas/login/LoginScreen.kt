@@ -36,6 +36,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.equipo.miranchopro.data.model.Usuario
 import com.equipo.miranchopro.viewmodel.LoginViewModel
 
 private val ForestGreen = Color(0xFF004D40)
@@ -47,7 +48,7 @@ private val InputBackground = Color(0xFFF1F4F9)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginExitoso: () -> Unit,
+    onLoginExitoso: (Usuario) -> Unit,
     onForgotPassword: () -> Unit,
     onRegisterClick: () -> Unit,
     viewModel: LoginViewModel = viewModel()
@@ -56,7 +57,9 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.loginExitoso) {
-        if (viewModel.loginExitoso) onLoginExitoso()
+        if (viewModel.loginExitoso && viewModel.usuarioLogueado != null) {
+            onLoginExitoso(viewModel.usuarioLogueado!!)
+        }
     }
 
     LaunchedEffect(viewModel.mensajeError) {
@@ -200,23 +203,14 @@ fun LoginScreen(
                                 .height(58.dp)
                                 .shadow(8.dp, RoundedCornerShape(18.dp)),
                             shape = RoundedCornerShape(18.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
-                            enabled = !viewModel.estaCargando
+                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
                         ) {
-                            if (viewModel.estaCargando) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text(
-                                    "INICIAR SESIÓN",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 1.sp
-                                )
-                            }
+                            Text(
+                                "INICIAR SESIÓN",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp
+                            )
                         }
                     }
                 }

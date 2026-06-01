@@ -12,11 +12,18 @@ data class Forecast(
 
 data class ForecastDay(
     @SerializedName("date") val date: String,
-    @SerializedName("day") val day: Day
+    @SerializedName("day") val day: Day,
+    @SerializedName("hour") val hour: List<Hour>
 )
 
 data class Day(
     @SerializedName("avgtemp_c") val avgTempC: Double,
+    @SerializedName("condition") val condition: Condition
+)
+
+data class Hour(
+    @SerializedName("time") val time: String,
+    @SerializedName("temp_c") val tempC: Double,
     @SerializedName("condition") val condition: Condition
 )
 

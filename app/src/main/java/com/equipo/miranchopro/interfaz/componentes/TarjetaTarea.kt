@@ -23,13 +23,13 @@ fun TarjetaTarea(
     tarea: Tarea,
     onTareaClick: (Tarea) -> Unit,
     onToggleCompletada: () -> Unit,
-    onEliminar: () -> Unit
+    onEliminar: (() -> Unit)? = null // Hecho opcional para el rol trabajador
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
-            .clickable { onTareaClick(tarea) },
+            .then(if (onEliminar != null) Modifier.clickable { onTareaClick(tarea) } else Modifier),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
@@ -83,8 +83,15 @@ fun TarjetaTarea(
                     )
                 }
                 
-                IconButton(onClick = onEliminar) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.LightGray.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
+                if (onEliminar != null) {
+                    IconButton(onClick = onEliminar) {
+                        Icon(
+                            imageVector = Icons.Default.Delete, 
+                            contentDescription = "Eliminar", 
+                            tint = Color.LightGray.copy(alpha = 0.6f), 
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.equipo.miranchopro.data.local.dao.UsuarioDao
+import com.equipo.miranchopro.data.model.Usuario
 import kotlinx.coroutines.launch
 
 class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
@@ -18,6 +19,9 @@ class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
         private set
         
     var estaCargando by mutableStateOf(false)
+        private set
+
+    var usuarioLogueado by mutableStateOf<Usuario?>(null)
         private set
 
     fun limpiarMensaje() { mensajeError = null }
@@ -38,6 +42,7 @@ class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
             try {
                 val usuario = usuarioDao.iniciarSesion(correo.trim(), contrasena)
                 if (usuario != null) {
+                    usuarioLogueado = usuario
                     loginExitoso = true
                 } else {
                     mensajeError = "Usuario o contraseña incorrectos"

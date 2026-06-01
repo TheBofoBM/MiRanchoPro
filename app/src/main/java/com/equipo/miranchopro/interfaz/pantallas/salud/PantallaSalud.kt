@@ -176,6 +176,14 @@ fun PantallaSalud(
                                 leadingIcon = { Icon(Icons.Default.Person, null) }
                             )
                             DropdownMenuItem(
+                                text = { Text("Clima Detallado") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.ClimaDetallado.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Cloud, null) }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Configuración") },
                                 onClick = { 
                                     menuExpandido = false
@@ -319,7 +327,7 @@ fun SeccionListaEnfermedades(lista: List<Enfermedad>, alCambiarEstado: (Enfermed
                             Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text(enfermedad.nombre, fontWeight = FontWeight.Black, fontSize = 20.sp); Text("Animal: #${enfermedad.idAnimal}", color = Color.Gray) }
                             Badge(containerColor = if(enfermedad.estado == "Activo") Color.Red else Color(0xFF4CAF50)) { Text(enfermedad.estado.uppercase(), color = Color.White, modifier = Modifier.padding(horizontal = 8.dp)) }
                         }
-                        Spacer(Modifier.height(16.dp)); Text("Síntomas: ${enfermedad.sintomas}", fontSize = 14.sp); Text("Tratamiento: ${enfermedad.tratamiento}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF008577))
+                        Spacer(modifier = Modifier.height(16.dp)); Text("Síntomas: ${enfermedad.sintomas}", fontSize = 14.sp); Text("Tratamiento: ${enfermedad.tratamiento}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF008577))
                         if (enfermedad.estado == "Activo") { Button(onClick = { alCambiarEstado(enfermedad, "Recuperado") }, modifier = Modifier.padding(top = 16.dp).fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE8F5E9), contentColor = Color(0xFF2E7D32)), shape = RoundedCornerShape(12.dp)) { Text("Marcar como Recuperado") } }
                     }
                 }

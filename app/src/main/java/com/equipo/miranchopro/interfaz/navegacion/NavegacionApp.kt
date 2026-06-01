@@ -30,9 +30,11 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.equipo.miranchopro.data.local.RanchoDatabase
+import com.equipo.miranchopro.data.model.Usuario
 import com.equipo.miranchopro.data.repository.AnimalRepository
 import com.equipo.miranchopro.data.repository.LoteRepository
 import com.equipo.miranchopro.data.repository.SaludRepository
+import com.equipo.miranchopro.data.repository.TareaRepository
 import com.equipo.miranchopro.domain.usecase.GenerarReporteUseCase
 import com.equipo.miranchopro.interfaz.componentes.ShakeOverlay
 import com.equipo.miranchopro.interfaz.pantallas.inicio.PantallaInicio
@@ -50,7 +52,8 @@ import com.equipo.miranchopro.interfaz.pantallas.tareas.PantallaTareas
 import com.equipo.miranchopro.interfaz.pantallas.trabajadores.PantallaTrabajadores
 import com.equipo.miranchopro.interfaz.pantallas.perfil.PantallaPerfil
 import com.equipo.miranchopro.interfaz.pantallas.configuracion.PantallaConfiguracion
-import com.equipo.miranchopro.interfaz.pantallas.recuperacion.RecuperarContrasenaScreen
+import com.equipo.miranchopro.interfaz.pantallas.clima.PantallaClimaDetallado
+import com.equipo.miranchopro.interfaz.pantallas.insumos.PantallaInsumos
 import com.equipo.miranchopro.modelovista.*
 import com.equipo.miranchopro.utils.ShakeDetector
 import com.equipo.miranchopro.viewmodel.*
@@ -59,7 +62,6 @@ import kotlinx.coroutines.launch
 sealed class Pantalla(val ruta: String) {
     object Login : Pantalla("login")
     object Registro : Pantalla("registro")
-    object RecuperarContrasena : Pantalla("recuperar_contrasena")
     object Inventario : Pantalla("inventario")
     object RegistrarAnimal : Pantalla("registrar_animal?tipo={tipo}&idTemp={idTemp}") {
         fun crearRuta(tipo: String? = null, idTemp: String? = null): String {
@@ -86,6 +88,8 @@ sealed class Pantalla(val ruta: String) {
     object Trabajadores : Pantalla("trabajadores")
     object Perfil : Pantalla("perfil")
     object Configuracion : Pantalla("configuracion")
+    object Insumos : Pantalla("insumos")
+    object ClimaDetallado : Pantalla("clima_detallado")
 }
 
 sealed class ItemNavegacion(
@@ -112,6 +116,9 @@ fun NavegacionApp() {
     val repoAnimales = remember { AnimalRepository(database.animalDao()) }
     val repoLotes = remember { LoteRepository(database.loteDao()) }
     val repoSalud = remember { SaludRepository(database.medicamentoDao(), database.vacunacionDao(), database.enfermedadDao()) }
+    val repoTareas = remember { TareaRepository(database.tareaDao()) }
+
+    var usuarioActual by remember { mutableStateOf<Usuario?>(null) }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -124,7 +131,7 @@ fun NavegacionApp() {
     val shakeDetector = remember { 
         ShakeDetector { 
             val rutaActual = navController.currentDestination?.route
-            if (rutaActual != null && rutaActual != Pantalla.Login.ruta && rutaActual != Pantalla.Registro.ruta && rutaActual != Pantalla.RecuperarContrasena.ruta) {
+            if (rutaActual != null && rutaActual != Pantalla.Login.ruta && rutaActual != Pantalla.Registro.ruta) {
                 mostrarShakeOverlay = true 
             }
         } 
@@ -137,7 +144,7 @@ fun NavegacionApp() {
         onDispose { sensorManager.unregisterListener(shakeDetector) }
     }
 
-    val pantallasSinBarra = listOf(Pantalla.Login.ruta, Pantalla.Registro.ruta, Pantalla.RecuperarContrasena.ruta)
+    val pantallasSinBarra = listOf(Pantalla.Login.ruta, Pantalla.Registro.ruta)
     val mostrarBarra = currentDestination?.route !in pantallasSinBarra
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -197,51 +204,75 @@ fun NavegacionApp() {
                 composable(Pantalla.Login.ruta) {
                     val loginViewModel: LoginViewModel = viewModel { LoginViewModel(database.usuarioDao()) }
                     LoginScreen(
-                        viewModel = loginViewModel, 
-                        onLoginExitoso = {
+                        onLoginExitoso = { user ->
+                            usuarioActual = user
                             navController.navigate(Pantalla.Inicio.ruta) { popUpTo(Pantalla.Login.ruta) { inclusive = true } }
                         }, 
                         onRegisterClick = { navController.navigate(Pantalla.Registro.ruta) },
-                        onForgotPassword = { navController.navigate(Pantalla.RecuperarContrasena.ruta) }
+                        onForgotPassword = { /* Implementar recuperación */ },
+                        viewModel = loginViewModel
                     )
                 }
+                
                 composable(Pantalla.Registro.ruta) {
                     val registroViewModel: RegistroViewModel = viewModel { RegistroViewModel(database.usuarioDao()) }
                     RegistroScreen(viewModel = registroViewModel, onRegistroExitoso = {
                         navController.navigate(Pantalla.Inicio.ruta) { popUpTo(Pantalla.Login.ruta) { inclusive = true } }
                     }, onIrALogin = { navController.popBackStack() } )
                 }
-                composable(Pantalla.RecuperarContrasena.ruta) {
-                    val recViewModel: RecuperarContrasenaViewModel = viewModel { 
-                        RecuperarContrasenaViewModel(database.usuarioDao()) 
-                    }
-                    RecuperarContrasenaScreen(
-                        onVolverClick = { navController.popBackStack() },
-                        viewModel = recViewModel
-                    )
-                }
+                
                 composable(Pantalla.Inicio.ruta) {
                     val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
                     val saludViewModel: SaludViewModel = viewModel { SaludViewModel(repoSalud) }
-                    PantallaInicio(navController = navController, inventarioViewModel = invViewModel, saludViewModel = saludViewModel)
+                    val tarViewModel: TareasViewModel = viewModel { TareasViewModel(repoTareas) }
+                    val climaViewModel: ClimaViewModel = viewModel()
+                    PantallaInicio(
+                        navController = navController, 
+                        inventarioViewModel = invViewModel, 
+                        saludViewModel = saludViewModel,
+                        usuarioActual = usuarioActual,
+                        tareasViewModel = tarViewModel,
+                        climaViewModel = climaViewModel
+                    )
                 }
+                
                 composable(Pantalla.Tareas.ruta) {
+                    val tareasViewModel: TareasViewModel = viewModel { TareasViewModel(repoTareas) }
                     val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao()) }
-                    PantallaTareas(navController = navController, trabajadoresViewModel = trabViewModel)
+                    PantallaTareas(
+                        navController = navController, 
+                        tareasViewModel = tareasViewModel, 
+                        trabajadoresViewModel = trabViewModel,
+                        usuarioActual = usuarioActual
+                    )
                 }
+                
                 composable(Pantalla.Salud.ruta) {
                     val saludViewModel: SaludViewModel = viewModel { SaludViewModel(repoSalud) }
                     PantallaSalud(navController = navController, viewModel = saludViewModel)
                 }
+                
                 composable(Pantalla.Reportes.ruta) {
                     val useCase = GenerarReporteUseCase(repoAnimales)
                     val reporteViewModel: ReporteViewModel = viewModel { ReporteViewModel(useCase) }
                     PantallaReportes(navController = navController, viewModel = reporteViewModel)
                 }
+                
                 composable(Pantalla.Trabajadores.ruta) {
                     val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao()) }
                     PantallaTrabajadores(navController = navController, viewModel = trabViewModel)
                 }
+                
+                composable(Pantalla.Insumos.ruta) {
+                    val insumoViewModel: InsumoViewModel = viewModel { InsumoViewModel(database.insumoDao()) }
+                    PantallaInsumos(navController = navController, viewModel = insumoViewModel)
+                }
+
+                composable(Pantalla.ClimaDetallado.ruta) {
+                    val climaViewModel: ClimaViewModel = viewModel()
+                    PantallaClimaDetallado(navController = navController, climaViewModel = climaViewModel)
+                }
+
                 composable(Pantalla.Inventario.ruta) {
                     val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
                     PantallaInventario(navController = navController, viewModel = invViewModel, alSeleccionarAnimal = { id -> 
@@ -250,6 +281,7 @@ fun NavegacionApp() {
                         else navController.navigate(Pantalla.EditarAnimal.crearRuta(id))
                     }, alAgregarAnimal = { tipo -> navController.navigate(Pantalla.RegistrarAnimal.crearRuta(tipo)) })
                 }
+                
                 composable(Pantalla.Lotes.ruta) {
                     val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
                     PantallaLotes(
@@ -259,10 +291,12 @@ fun NavegacionApp() {
                         onVerDetalle = { idLote -> navController.navigate(Pantalla.DetalleLote.crearRuta(idLote)) }
                     )
                 }
+                
                 composable(Pantalla.RegistrarLote.ruta) {
                     val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
                     PantallaRegistrarLote(viewModel = lotesViewModel, onVolver = { navController.popBackStack() })
                 }
+                
                 composable(
                     route = Pantalla.DetalleLote.ruta,
                     arguments = listOf(navArgument("idLote") { type = NavType.IntType })
@@ -285,12 +319,15 @@ fun NavegacionApp() {
                         )
                     }
                 }
+                
                 composable(Pantalla.Perfil.ruta) {
                     PantallaPerfil(navController = navController)
                 }
+                
                 composable(Pantalla.Configuracion.ruta) {
                     PantallaConfiguracion(navController = navController)
                 }
+                
                 composable(
                     route = Pantalla.RegistrarAnimal.ruta, 
                     arguments = listOf(
@@ -305,6 +342,7 @@ fun NavegacionApp() {
                     }
                     PantallaRegistrarAnimal(viewModel = regViewModel, alFinalizar = { navController.popBackStack() })
                 }
+
                 composable(
                     route = Pantalla.EditarAnimal.ruta, 
                     arguments = listOf(navArgument("idArete") { type = NavType.StringType })

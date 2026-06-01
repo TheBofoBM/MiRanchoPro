@@ -32,6 +32,7 @@ fun PantallaInsumos(
     val insumos by viewModel.listaInsumos.collectAsState()
     var mostrarDialogo by remember { mutableStateOf(false) }
     var insumoAEditar by remember { mutableStateOf<Insumo?>(null) }
+    var insumoAAbastecer by remember { mutableStateOf<Insumo?>(null) }
     var mostrarDialogoConsumo by remember { mutableStateOf<Insumo?>(null) }
     var menuExpandido by remember { mutableStateOf(false) }
 
@@ -61,6 +62,17 @@ fun PantallaInsumos(
         )
     }
 
+    if (insumoAAbastecer != null) {
+        DialogoAbastecerInsumo(
+            insumo = insumoAAbastecer!!,
+            onDismiss = { insumoAAbastecer = null },
+            onConfirm = { cantidad ->
+                viewModel.abastecerInsumo(insumoAAbastecer!!, cantidad)
+                insumoAAbastecer = null
+            }
+        )
+    }
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -70,9 +82,10 @@ fun PantallaInsumos(
                 },
                 containerColor = Color(0xFF008577),
                 contentColor = Color.White,
-                shape = CircleShape
+                shape = CircleShape,
+                modifier = Modifier.size(72.dp).padding(8.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar")
+                Icon(Icons.Default.Add, contentDescription = "Agregar", modifier = Modifier.size(36.dp))
             }
         }
     ) { padding ->
@@ -158,13 +171,15 @@ fun PantallaInsumos(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(insumos, key = { it.id }) { insumo ->
                         TarjetaInsumo(
                             insumo = insumo,
                             onRegistrarConsumo = { mostrarDialogoConsumo = insumo },
-                            onAbastecer = { /* Lógica para stock */ }
+                            onAbastecer = { insumoAAbastecer = insumo },
+                            onDelete = { viewModel.eliminarInsumo(insumo) }
                         )
                     }
                 }
@@ -177,12 +192,11 @@ fun PantallaInsumos(
 fun TarjetaInsumo(
     insumo: Insumo,
     onRegistrarConsumo: () -> Unit,
-    onAbastecer: () -> Unit
+    onAbastecer: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
@@ -206,26 +220,37 @@ fun TarjetaInsumo(
                     Text(insumo.nombre, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     Text(insumo.tipo, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
-                Text(
-                    "${insumo.cantidad} ${insumo.unidadMedida}",
-                    fontWeight = FontWeight.Black,
-                    color = if (insumo.cantidad <= insumo.stockMinimo) Color.Red else Color.Black
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "${insumo.cantidad} ${insumo.unidadMedida}",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp,
+                        color = if (insumo.cantidad <= 10) Color.Red else Color.Black
+                    )
+                    if (insumo.cantidad <= 10) {
+                        Text("¡Stock Bajo!", color = Color.Red, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onRegistrarConsumo) {
-                    Text("Registrar Suministro", color = Color(0xFF008577))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.LightGray)
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = onAbastecer,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF008577)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Abastecer")
+                Row {
+                    TextButton(onClick = onRegistrarConsumo) {
+                        Text("Gastar", color = Color(0xFF008577))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onAbastecer,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF008577)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Abastecer")
+                    }
                 }
             }
         }
@@ -245,22 +270,59 @@ fun DialogoRegistrarConsumo(
         title = { Text("Registrar Suministro") },
         text = {
             Column {
-                Text("¿Cuánto de ${insumo.nombre} se suministró?")
+                Text("¿Cuánto de ${insumo.nombre} se utilizó?")
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = cantidad,
                     onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) cantidad = it },
-                    label = { Text("Cantidad (${insumo.unidadMedida})") },
+                    label = { Text("Cantidad a descontar (${insumo.unidadMedida})") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { 
+            Button(onClick = { 
                 cantidad.toDoubleOrNull()?.let { onConfirm(it) }
             }) {
-                Text("Confirmar")
+                Text("Descontar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        }
+    )
+}
+
+@Composable
+fun DialogoAbastecerInsumo(
+    insumo: Insumo,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit
+) {
+    var cantidad by remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Abastecer Inventario") },
+        text = {
+            Column {
+                Text("¿Cuánto de ${insumo.nombre} se compró/recibió?")
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = cantidad,
+                    onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) cantidad = it },
+                    label = { Text("Cantidad a añadir (${insumo.unidadMedida})") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { 
+                cantidad.toDoubleOrNull()?.let { onConfirm(it) }
+            }) {
+                Text("Sumar al stock")
             }
         },
         dismissButton = {

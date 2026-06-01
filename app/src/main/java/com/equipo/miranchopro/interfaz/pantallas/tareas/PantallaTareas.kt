@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.equipo.miranchopro.data.local.RanchoDatabase
 import com.equipo.miranchopro.data.model.Tarea
+import com.equipo.miranchopro.data.model.Usuario
 import com.equipo.miranchopro.modelovista.TareasViewModel
 import com.equipo.miranchopro.viewmodel.TrabajadoresViewModel
 import com.equipo.miranchopro.interfaz.componentes.DialogoAsignarTarea
@@ -31,7 +32,8 @@ import com.equipo.miranchopro.interfaz.navegacion.Pantalla
 @Composable
 fun PantallaTareas(
     navController: NavController,
-    tareasViewModel: TareasViewModel = viewModel(),
+    tareasViewModel: TareasViewModel,
+    usuarioActual: Usuario? = null,
     trabajadoresViewModel: TrabajadoresViewModel = run {
         val context = LocalContext.current.applicationContext
         viewModel {
@@ -39,11 +41,20 @@ fun PantallaTareas(
         }
     }
 ) {
-    val listaTareas = tareasViewModel.listaTareas
+    val listaTareasOriginal by tareasViewModel.listaTareas.collectAsState()
     val listaTrabajadores by trabajadoresViewModel.listaTrabajadores.collectAsState()
     var mostrarDialogo by remember { mutableStateOf(false) }
     var tareaAEditar by remember { mutableStateOf<Tarea?>(null) }
     var menuExpandido by remember { mutableStateOf(false) }
+
+    // Filtrado por rol: Trabajadores solo ven lo asignado a ellos
+    val listaTareas = remember(listaTareasOriginal, usuarioActual) {
+        if (usuarioActual?.rol?.uppercase() == "TRABAJADOR") {
+            listaTareasOriginal.filter { it.responsable == usuarioActual.correo }
+        } else {
+            listaTareasOriginal
+        }
+    }
 
     if (mostrarDialogo) {
         DialogoAsignarTarea(
@@ -67,21 +78,29 @@ fun PantallaTareas(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { 
-                    tareaAEditar = null
-                    mostrarDialogo = true 
-                },
-                containerColor = Color(0xFF008577),
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier.size(72.dp).padding(8.dp)
-            ) { Icon(Icons.Default.Add, contentDescription = "Añadir", modifier = Modifier.size(36.dp)) }
+            // Solo Administradores pueden crear tareas
+            if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") {
+                FloatingActionButton(
+                    onClick = { 
+                        tareaAEditar = null
+                        mostrarDialogo = true 
+                    },
+                    containerColor = Color(0xFF008577),
+                    contentColor = Color.White,
+                    shape = CircleShape,
+                    modifier = Modifier.size(72.dp).padding(8.dp)
+                ) { Icon(Icons.Default.Add, contentDescription = "Añadir", modifier = Modifier.size(36.dp)) }
+            }
         }
     ) { padding ->
+        // Clasificación de tareas
         val hoy = listaTareas.filter { it.fecha.isNullOrEmpty() }
         val proximas = listaTareas.filter { !it.fecha.isNullOrEmpty() }
-        val hechas = hoy.count { it.estaHecha }
+        
+        // Conteos actualizados correctamente basándose en la lista filtrada y estado de DB
+        val totalCount = listaTareas.size
+        val hechasCount = listaTareas.count { it.estaHecha }
+        val pendientesCount = totalCount - hechasCount
 
         Column(
             modifier = Modifier
@@ -111,7 +130,7 @@ fun PantallaTareas(
                             letterSpacing = (-1).sp
                         )
                         Text(
-                            text = "${hoy.size} asignadas para hoy",
+                            text = if (usuarioActual?.rol?.uppercase() == "TRABAJADOR") "Tus asignaciones" else "${hoy.size} asignadas para hoy",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF00BFA5)
@@ -133,6 +152,14 @@ fun PantallaTareas(
                                     navController.navigate(Pantalla.Perfil.ruta)
                                 },
                                 leadingIcon = { Icon(Icons.Default.Person, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Clima Detallado") },
+                                onClick = { 
+                                    menuExpandido = false
+                                    navController.navigate(Pantalla.ClimaDetallado.ruta)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Cloud, null) }
                             )
                             DropdownMenuItem(
                                 text = { Text("Configuración") },
@@ -166,60 +193,54 @@ fun PantallaTareas(
             ) {
                 item {
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
-                        CajaResumen("${hoy.size}", "Total", Modifier.weight(1f))
-                        CajaResumen("$hechas", "Hechas", Modifier.weight(1f), Color(0xFF00897B))
-                        CajaResumen("${hoy.size - hechas}", "Pendientes", Modifier.weight(1f), Color(0xFFEF6C00))
-                    }
-
-                    Text("Hoy", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    
-                    if (hoy.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "Hoy no tienes tareas asignadas",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.Gray
-                            )
-                        }
+                        CajaResumen("$totalCount", "Total", Modifier.weight(1f))
+                        CajaResumen("$hechasCount", "Hechas", Modifier.weight(1f), Color(0xFF00897B))
+                        CajaResumen("$pendientesCount", "Pendientes", Modifier.weight(1f), Color(0xFFEF6C00))
                     }
                 }
 
-                items(hoy, key = { it.id }) { tarea ->
-                    TarjetaTarea(
-                        tarea = tarea,
-                        onTareaClick = { seleccionada ->
-                            tareaAEditar = seleccionada
-                            mostrarDialogo = true
-                        },
-                        onToggleCompletada = {
-                            tareasViewModel.toggleTareaCompletada(tarea)
-                        },
-                        onEliminar = { tareasViewModel.eliminarTarea(tarea) }
-                    )
+                if (hoy.isNotEmpty()) {
+                    item { Text("Para hoy", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp)) }
+                    items(hoy, key = { it.id }) { tarea ->
+                        TarjetaTarea(
+                            tarea = tarea,
+                            onTareaClick = { seleccionada ->
+                                if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") {
+                                    tareaAEditar = seleccionada
+                                    mostrarDialogo = true
+                                }
+                            },
+                            onToggleCompletada = { tareasViewModel.toggleTareaCompletada(tarea) },
+                            onEliminar = if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") ({ tareasViewModel.eliminarTarea(tarea) }) else null
+                        )
+                    }
                 }
 
                 if (proximas.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text("Próximas tareas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
+                    item { Text("Próximas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)) }
                     items(proximas, key = { it.id }) { tarea ->
                         TarjetaTarea(
                             tarea = tarea,
                             onTareaClick = { seleccionada ->
-                                tareaAEditar = seleccionada
-                                mostrarDialogo = true
+                                if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") {
+                                    tareaAEditar = seleccionada
+                                    mostrarDialogo = true
+                                }
                             },
-                            onToggleCompletada = {
-                                tareasViewModel.toggleTareaCompletada(tarea)
-                            },
-                            onEliminar = { tareasViewModel.eliminarTarea(tarea) }
+                            onToggleCompletada = { tareasViewModel.toggleTareaCompletada(tarea) },
+                            onEliminar = if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") ({ tareasViewModel.eliminarTarea(tarea) }) else null
                         )
+                    }
+                }
+
+                if (listaTareas.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("No hay tareas asignadas", color = Color.Gray)
+                        }
                     }
                 }
             }
