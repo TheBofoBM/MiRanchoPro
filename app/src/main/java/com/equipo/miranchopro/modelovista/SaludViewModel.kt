@@ -33,9 +33,9 @@ class SaludViewModel(
         }
     }
 
-    suspend fun existeMedicamento(nombre: String, idAExcluir: String? = null): Boolean {
+    fun existeMedicamento(nombre: String, idAExcluir: String? = null): Boolean {
         return listaMedicamentos.value.any { 
-            it.nombre.equals(nombre, ignoreCase = true) && it.id != idAExcluir 
+            it.nombre.trim().equals(nombre.trim(), ignoreCase = true) && it.id != idAExcluir
         }
     }
 

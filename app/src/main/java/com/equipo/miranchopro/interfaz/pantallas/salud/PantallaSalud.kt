@@ -69,8 +69,17 @@ fun PantallaSalud(
     if (mostrarDialogoMedicamento) {
         DialogoMedicamento(
             medicamentoExistente = medicamentoAEditar,
+            validarNombre = { nombre, id -> viewModel.existeMedicamento(nombre, id) },
             onDismiss = { mostrarDialogoMedicamento = false; medicamentoAEditar = null },
-            onConfirm = { viewModel.agregarMedicamento(it); mostrarDialogoMedicamento = false }
+            onConfirm = { 
+                if (medicamentoAEditar != null) {
+                    viewModel.editarMedicamento(it)
+                } else {
+                    viewModel.agregarMedicamento(it)
+                }
+                mostrarDialogoMedicamento = false
+                medicamentoAEditar = null
+            }
         )
     }
 

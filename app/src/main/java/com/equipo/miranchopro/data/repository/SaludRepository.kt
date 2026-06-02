@@ -17,6 +17,7 @@ class SaludRepository(
 ) {
     // Medicamentos
     fun obtenerMedicamentos(): Flow<List<Medicamento>> = medicamentoDao.obtenerTodos()
+    suspend fun buscarMedicamentoPorNombre(nombre: String): Medicamento? = medicamentoDao.buscarPorNombre(nombre)
     suspend fun insertarMedicamento(medicamento: Medicamento) = medicamentoDao.insertar(medicamento)
     suspend fun actualizarMedicamento(medicamento: Medicamento) = medicamentoDao.actualizar(medicamento)
     suspend fun eliminarMedicamento(medicamento: Medicamento) = medicamentoDao.eliminar(medicamento)

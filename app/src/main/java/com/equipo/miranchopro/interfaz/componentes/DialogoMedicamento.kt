@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.equipo.miranchopro.data.model.Medicamento
+import java.util.UUID
 
 @Composable
 fun DialogoMedicamento(
@@ -85,7 +86,7 @@ fun DialogoMedicamento(
                         value = unidadMedida,
                         onValueChange = { unidadMedida = it },
                         label = { Text("Unidad") },
-                        placeholder = { Text("Frascos, ml...") },
+                        placeholder = { Text("ml, mg...") },
                         modifier = Modifier.weight(1f),
                         singleLine = true
                     )
@@ -108,7 +109,7 @@ fun DialogoMedicamento(
                             } else {
                                 onConfirm(
                                     Medicamento(
-                                        id = medicamentoExistente?.id ?: java.util.UUID.randomUUID().toString(),
+                                        id = medicamentoExistente?.id ?: UUID.randomUUID().toString(),
                                         nombre = nombre,
                                         dosis = dosis,
                                         stock = stock.toIntOrNull() ?: 0,

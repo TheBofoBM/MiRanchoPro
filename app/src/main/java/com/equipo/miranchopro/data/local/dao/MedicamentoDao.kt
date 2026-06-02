@@ -9,6 +9,9 @@ interface MedicamentoDao {
     @Query("SELECT * FROM medicamentos")
     fun obtenerTodos(): Flow<List<Medicamento>>
 
+    @Query("SELECT * FROM medicamentos WHERE nombre = :nombre LIMIT 1")
+    suspend fun buscarPorNombre(nombre: String): Medicamento?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertar(medicamento: Medicamento)
 
