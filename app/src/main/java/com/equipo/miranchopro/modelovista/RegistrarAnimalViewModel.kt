@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.equipo.miranchopro.data.model.Animal
@@ -34,9 +35,12 @@ class RegistrarAnimalViewModel(
     var marcas by mutableStateOf("")
     var ubicacion by mutableStateOf("Lote A")
     
-    // NUEVO: Estado para la foto
+    // Estado para la foto
     var fotoUri by mutableStateOf<Uri?>(null)
     var fotoPath by mutableStateOf<String?>(null)
+    
+    // URI temporal para la cámara
+    private var tempCameraUri: Uri? = null
 
     var esEdicionPendiente by mutableStateOf(false)
         private set
@@ -68,9 +72,9 @@ class RegistrarAnimalViewModel(
                 idArete = ""
                 tipo = animal.tipo
                 origen = "De parto"
-                ubicacion = "Lote recién nacidos"
+                ubicacion = animal.ubicacion
                 horaNacimientoRegistrada = animal.horaNacimiento ?: "00:00:00"
-                fotoPath = animal.fotoPath // Cargar foto si ya tiene
+                fotoPath = animal.fotoPath
 
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 fechaNacimiento = sdf.format(Date(animal.fechaRegistro))
@@ -78,11 +82,31 @@ class RegistrarAnimalViewModel(
         }
     }
 
+    fun crearUriTemporalCamara(context: Context): Uri {
+        val directory = File(context.getExternalFilesDir(null), "FotoAnimales")
+        if (!directory.exists()) directory.mkdirs()
+        
+        val file = File.createTempFile("IMG_", ".jpg", directory)
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        tempCameraUri = uri
+        return uri
+    }
+
+    fun confirmarFotoCamara() {
+        fotoUri = tempCameraUri
+    }
+
     private fun guardarImagenEnInterno(context: Context, uri: Uri): String? {
         return try {
             val fileName = "animal_${idArete.ifBlank { "temp_" + System.currentTimeMillis() }}.jpg"
-            val file = File(context.filesDir, "fotos_animales").apply { if (!exists()) mkdirs() }
-            val destFile = File(file, fileName)
+            val directory = File(context.getExternalFilesDir(null), "FotoAnimales")
+            if (!directory.exists()) directory.mkdirs()
+            
+            val destFile = File(directory, fileName)
             
             context.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(destFile).use { output ->
@@ -109,12 +133,12 @@ class RegistrarAnimalViewModel(
 
         estaCargando = true
         
-        // Si hay una nueva URI de foto, la guardamos físicamente
-        fotoUri?.let { uri ->
-            fotoPath = guardarImagenEnInterno(context, uri)
-        }
-
         viewModelScope.launch {
+            // Si hay una nueva URI de foto, la guardamos físicamente
+            fotoUri?.let { uri ->
+                fotoPath = guardarImagenEnInterno(context, uri)
+            }
+
             val animalAGuardar = Animal(
                 idArete = idArete.trim(),
                 nombre = nombre.trim(),
@@ -130,7 +154,7 @@ class RegistrarAnimalViewModel(
                 estado = "Sano",
                 horaNacimiento = horaNacimientoRegistrada,
                 fechaRegistro = System.currentTimeMillis(),
-                fotoPath = fotoPath // Guardamos la ruta
+                fotoPath = fotoPath
             )
 
             val resultado = if (esEdicionPendiente && idTemporalOriginal != null) {
@@ -174,5 +198,6 @@ class RegistrarAnimalViewModel(
         esEdicionPendiente = false; idTemporalOriginal = null
         horaNacimientoRegistrada = "00:00:00"
         fotoUri = null; fotoPath = null
+        tempCameraUri = null
     }
 }

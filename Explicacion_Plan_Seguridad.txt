@@ -1,0 +1,92 @@
+ESTRUCTURA Y EXPLICACIÓN PARA EL DOCUMENTO: "Plan de Seguridad de la Aplicación Móvil - MiRanchoPro"
+
+Este documento sirve como base para redactar el PDF solicitado, adaptado al contexto de tu proyecto MiRanchoPro.
+
+---
+
+1. INTRODUCCIÓN
+
+* ¿Qué hace la aplicación móvil?:
+MiRanchoPro es una herramienta integral de gestión ganadera que permite a los administradores de ranchos controlar inventarios de animales, gestionar lotes, monitorear la salud (vacunas y enfermedades) y coordinar tareas diarias. Incluye funciones innovadoras como el registro mediante sensores de movimiento y la identificación visual por fotografía.
+
+* Público objetivo:
+Dueños de ranchos, administradores ganaderos y personal operativo que requiere digitalizar el control de su producción en tiempo real desde el campo.
+
+* Funcionalidades principales:
+  - Registro y edición detallada de ganado (incluyendo captura de fotos con cámara y galería).
+  - Gestión de salud (medicamentos, vacunación, alertas).
+  - Control de lotes y ubicaciones.
+  - Generación de reportes operativos (PDF/Excel).
+  - Consulta de clima para planificación de tareas.
+
+* Importancia de la seguridad para su aplicación:
+La seguridad es crítica porque MiRanchoPro maneja el "patrimonio" del usuario. La pérdida de integridad en los datos de inventario o el acceso no autorizado a la información de ubicación del ganado podría resultar en pérdidas económicas graves.
+
+---
+
+2. DESCRIPCIÓN DE LA APLICACIÓN
+
+* Objetivo:
+Optimizar la administración ganadera mediante la digitalización segura de procesos, garantizando que la información sea precisa, privada y accesible solo para personal autorizado.
+
+* Datos sensibles que maneja:
+  - Credenciales de acceso (Correos y contraseñas).
+  - Registros de propiedad (ID de aretes).
+  - Ubicación física de los lotes de animales.
+  - Fotografías de identificación de los ejemplares almacenadas en el dispositivo.
+
+---
+
+3. VULNERABILIDADES POTENCIALES
+
+* Inyección en Base de Datos: Intentos de manipular la base de datos SQLite si no se validan las entradas de búsqueda.
+* Exposición de URIs de Archivos: Riesgo de compartir rutas físicas de fotos (file://), lo cual es vulnerable en versiones modernas de Android.
+* Almacenamiento Multimedia Inseguro: Riesgo de que aplicaciones externas accedan a las fotos de los animales si se guardan en carpetas compartidas.
+* Contraseñas Débiles: Permitir que los usuarios usen claves sencillas facilita ataques de fuerza bruta.
+
+---
+
+4. POSIBLES ATAQUES
+
+* Acceso No Autorizado: Un atacante ganando acceso a la cuenta para alterar el inventario.
+* Secuestro de Archivos Multimedia: Acceso malintencionado a la carpeta de fotografías para borrar o manipular la identidad visual del ganado.
+* Ataque Man-in-the-Middle (MitM): Interceptar la comunicación con la API del clima.
+* Manipulación de Reportes: Alterar los archivos PDF generados para ocultar faltantes de ganado.
+
+---
+
+5. PRINCIPIOS DE SEGURIDAD APLICABLES
+
+* Confidencialidad: Asegurar que solo el administrador vea las fotografías privadas de sus animales.
+* Integridad: Garantizar que un registro o su fotografía de identidad no sean modificados malintencionadamente.
+* Disponibilidad: Que la app funcione offline (usando Room y almacenamiento local de fotos) para que el registro sea continuo en el campo.
+
+---
+
+6. TÉCNICAS DE SEGURIDAD IMPLEMENTADAS
+
+* Uso de FileProvider: Implementación de URIs seguras (content://) para la captura de fotos, evitando exponer la estructura física de archivos del sistema.
+* Almacenamiento Estructurado Privado: Creación de la carpeta específica "FotoAnimales" dentro del almacenamiento privado de la app (getExternalFilesDir), garantizando que las imágenes no sean visibles en la galería pública del teléfono.
+* Autenticación Robusta: Validación de correo único y contraseñas con longitud mínima.
+* Validación de Entradas: Limpieza de strings en campos de texto para evitar caracteres maliciosos.
+* Ofuscación de Código: Usar R8 para dificultar la ingeniería inversa.
+
+---
+
+7. ESCENARIOS DE RIESGO
+
+* Escenario A: El administrador pierde su teléfono. Mitigación: Las fotos están en un directorio privado y ocultas de la galería estándar.
+* Escenario B: Un trabajador intenta registrarse con el correo del dueño. Mitigación: El sistema detecta el correo duplicado y bloquea el registro.
+* Escenario C: Intento de inyectar archivos maliciosos mediante el nombre de la foto. Mitigación: Uso de nombres de archivo estandarizados (animal_ID.jpg) generados por el sistema.
+
+---
+
+8. CONCLUSIONES
+La implementación de MiRanchoPro prioriza la protección de la base de datos y la integridad de la identificación visual mediante el uso de FileProvider y almacenamiento privado.
+
+---
+
+9. REFERENCIAS
+* Android Security Best Practices (Google).
+* OWASP Mobile Top 10.
+* Documentación oficial de FileProvider y Room.

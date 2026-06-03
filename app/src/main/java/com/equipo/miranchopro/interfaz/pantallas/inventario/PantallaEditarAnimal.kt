@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.collectLatest
 private val ColorTituloSeccion = Color(0xFF00897B)
 private val ColorIconoGris = Color(0xFF90A4AE)
 private val ColorTextoEtiqueta = Color(0xFF9E9E9E)
+private val EmeraldPrimary = Color(0xFF00897B)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,10 +49,21 @@ fun PantallaEditarAnimal(
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    var mostrarDialogoOpcionesFoto by remember { mutableStateOf(false) }
+    var mostrarConfirmacionCamara by remember { mutableStateOf(false) }
+    var tempUriCamara by remember { mutableStateOf<Uri?>(null) }
     
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) viewModel.fotoUri = uri }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            mostrarConfirmacionCamara = true
+        }
+    }
 
     LaunchedEffect(idArete) {
         viewModel.cargarAnimal(idArete)
@@ -72,6 +85,85 @@ fun PantallaEditarAnimal(
                 }
             }
         }
+    }
+
+    // Diálogo para elegir entre Cámara o Galería
+    if (mostrarDialogoOpcionesFoto) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoOpcionesFoto = false },
+            title = { Text("Actualizar fotografía", fontWeight = FontWeight.Bold) },
+            text = { Text("Selecciona el origen de la nueva imagen.") },
+            confirmButton = {
+                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            val uri = viewModel.crearUriTemporalCamara(context)
+                            tempUriCamara = uri
+                            cameraLauncher.launch(uri)
+                            mostrarDialogoOpcionesFoto = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                    ) {
+                        Icon(Icons.Default.PhotoCamera, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Tomar Foto")
+                    }
+                    Button(
+                        onClick = {
+                            galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            mostrarDialogoOpcionesFoto = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Elegir de Galería")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogoOpcionesFoto = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // Diálogo de confirmación después de tomar la foto
+    if (mostrarConfirmacionCamara) {
+        AlertDialog(
+            onDismissRequest = { mostrarConfirmacionCamara = false },
+            title = { Text("¿Aceptar fotografía?", fontWeight = FontWeight.Bold) },
+            text = {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp))) {
+                    AsyncImage(
+                        model = tempUriCamara,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.confirmarFotoCamara()
+                        mostrarConfirmacionCamara = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                ) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        val uri = viewModel.crearUriTemporalCamara(context)
+                        tempUriCamara = uri
+                        cameraLauncher.launch(uri)
+                        mostrarConfirmacionCamara = false
+                    }
+                ) { Text("Tomar de nuevo") }
+            }
+        )
     }
 
     Scaffold(
@@ -112,7 +204,7 @@ fun PantallaEditarAnimal(
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFFF5F5F5))
                         .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(16.dp))
-                        .clickable { galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                        .clickable { mostrarDialogoOpcionesFoto = true },
                     contentAlignment = Alignment.Center
                 ) {
                     if (viewModel.fotoUri != null || viewModel.fotoPath != null) {
@@ -141,7 +233,7 @@ fun PantallaEditarAnimal(
                 InfoItemLecturaFicha("Edad Calculada", viewModel.edad, Icons.Outlined.Cake)
             }
 
-            // --- SECCIÓN: NACIMIENTO Y ORIGEN (DISEÑO SOLICITADO) ---
+            // --- SECCIÓN: NACIMIENTO Y ORIGEN ---
             CardSeccionEditar("Nacimiento y Origen") {
                 InfoItemLecturaFicha("Ubicación / Lote", viewModel.ubicacion, Icons.Outlined.LocationOn)
                 InfoItemLecturaFicha("Origen", viewModel.origen, Icons.Outlined.AutoAwesome)
@@ -165,7 +257,11 @@ fun PantallaEditarAnimal(
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B))
             ) {
-                Text("ACTUALIZAR REGISTRO", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (viewModel.estaCargando) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text("ACTUALIZAR REGISTRO", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
             }
             
             Spacer(modifier = Modifier.height(40.dp))
@@ -210,11 +306,23 @@ fun CampoEditable(label: String, valor: String, onValueChange: (String) -> Unit,
     Column(modifier = Modifier.padding(bottom = 12.dp)) {
         Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
         OutlinedTextField(
-            value = valor, onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            value = valor,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
             keyboardOptions = KeyboardOptions(keyboardType = k),
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ColorTituloSeccion)
+            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black,
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                focusedBorderColor = ColorTituloSeccion,
+                unfocusedBorderColor = Color(0xFF9E9E9E),
+                cursorColor = ColorTituloSeccion
+            )
         )
     }
 }

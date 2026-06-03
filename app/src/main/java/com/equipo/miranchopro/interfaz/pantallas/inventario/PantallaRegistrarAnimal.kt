@@ -50,12 +50,21 @@ fun PantallaRegistrarAnimal(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var expandedTipo by remember { mutableStateOf(false) }
-    var expandedOrigen by remember { mutableStateOf(false) }
-    var mostrarDialogoFoto by remember { mutableStateOf(false) }
+    var mostrarDialogoOpcionesFoto by remember { mutableStateOf(false) }
+    var mostrarConfirmacionCamara by remember { mutableStateOf(false) }
+    var tempUriCamara by remember { mutableStateOf<Uri?>(null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) viewModel.fotoUri = uri }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            mostrarConfirmacionCamara = true
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.eventoUI.collectLatest { evento ->
@@ -71,22 +80,81 @@ fun PantallaRegistrarAnimal(
         }
     }
 
-    if (mostrarDialogoFoto) {
+    // Diálogo para elegir entre Cámara o Galería
+    if (mostrarDialogoOpcionesFoto) {
         AlertDialog(
-            onDismissRequest = { mostrarDialogoFoto = false },
-            title = { Text("Fotografía del animal", fontWeight = FontWeight.Bold) },
-            text = { Text("Selecciona una imagen de tu galería para adjuntarla al registro.") },
+            onDismissRequest = { mostrarDialogoOpcionesFoto = false },
+            title = { Text("Adjuntar fotografía", fontWeight = FontWeight.Bold) },
+            text = { Text("Selecciona el origen de la imagen para el animal.") },
             confirmButton = {
-                Button(
-                    onClick = { 
-                        galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        mostrarDialogoFoto = false 
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
-                ) { Text("Abrir Galería") }
+                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            val uri = viewModel.crearUriTemporalCamara(context)
+                            tempUriCamara = uri
+                            cameraLauncher.launch(uri)
+                            mostrarDialogoOpcionesFoto = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                    ) {
+                        Icon(Icons.Default.PhotoCamera, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Tomar Foto")
+                    }
+                    Button(
+                        onClick = {
+                            galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            mostrarDialogoOpcionesFoto = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Elegir de Galería")
+                    }
+                }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarDialogoFoto = false }) { Text("Cancelar") }
+                TextButton(onClick = { mostrarDialogoOpcionesFoto = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // Diálogo de confirmación después de tomar la foto
+    if (mostrarConfirmacionCamara) {
+        AlertDialog(
+            onDismissRequest = { mostrarConfirmacionCamara = false },
+            title = { Text("¿Aceptar fotografía?", fontWeight = FontWeight.Bold) },
+            text = {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp))) {
+                    AsyncImage(
+                        model = tempUriCamara,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.confirmarFotoCamara()
+                        mostrarConfirmacionCamara = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                ) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        val uri = viewModel.crearUriTemporalCamara(context)
+                        tempUriCamara = uri
+                        cameraLauncher.launch(uri)
+                        mostrarConfirmacionCamara = false
+                    }
+                ) { Text("Tomar de nuevo") }
             }
         )
     }
@@ -146,7 +214,7 @@ fun PantallaRegistrarAnimal(
                             .clip(RoundedCornerShape(24.dp))
                             .background(ColorGrisSuave)
                             .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(24.dp))
-                            .clickable { mostrarDialogoFoto = true },
+                            .clickable { mostrarDialogoOpcionesFoto = true },
                         contentAlignment = Alignment.Center
                     ) {
                         if (viewModel.fotoUri != null || viewModel.fotoPath != null) {
@@ -208,7 +276,7 @@ fun PantallaRegistrarAnimal(
                     if (viewModel.esEdicionPendiente) {
                         ItemLecturaElegante("Fecha Capturada", viewModel.fechaNacimiento, Icons.Outlined.CalendarMonth)
                         ItemLecturaElegante("Hora de Nacimiento", viewModel.horaNacimientoRegistrada, Icons.Outlined.AccessTime)
-                        ItemLecturaElegante("Lote Sugerido", "Lote recién nacidos", Icons.Outlined.LocationOn)
+                        ItemLecturaElegante("Lote Sugerido", viewModel.ubicacion, Icons.Outlined.LocationOn)
                     } else {
                         CampoPremium("Fecha de Nacimiento *", viewModel.fechaNacimiento, { viewModel.fechaNacimiento = it }, "dd/mm/aaaa")
                         CampoPremium("Ubicación / Lote", viewModel.ubicacion, { viewModel.ubicacion = it }, "Ej: Lote A")
