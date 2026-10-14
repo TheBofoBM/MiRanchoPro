@@ -66,7 +66,7 @@ fun ShakeOverlay(
                 titulo = "Nacimiento",
                 subtitulo = "Registro rápido de cría",
                 icon = Icons.Default.Pets,
-                color = Color(0xFF008577),
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.scale(scale),
                 onClick = onRegistrarNacimiento
             )

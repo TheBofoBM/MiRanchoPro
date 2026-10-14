@@ -156,7 +156,7 @@ fun PantallaSalud(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (vistaActual != VistaSalud.CATEGORIAS) {
                                 IconButton(onClick = { vistaActual = VistaSalud.CATEGORIAS }, modifier = Modifier.size(32.dp)) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = Color.White)
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
@@ -294,7 +294,7 @@ fun PantallaSalud(
                                             Text("Alerta del Sensor", fontWeight = FontWeight.Bold)
                                             Text("Detectada: ${alerta.fechaDeteccion}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
-                                        Text("Completar", color = Color(0xFF008577), fontWeight = FontWeight.Bold)
+                                        Text("Completar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -325,7 +325,7 @@ fun SeccionListaVacunacion(lista: List<Vacunacion>) {
             items(lista) { vacuna ->
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(2.dp)) {
                     Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(color = Color(0xFFE8F5E9), shape = CircleShape, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Vaccines, null, tint = Color(0xFF4CAF50), modifier = Modifier.padding(12.dp)) }
+                        Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = CircleShape, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Vaccines, null, tint = Color(0xFF4CAF50), modifier = Modifier.padding(12.dp)) }
                         Spacer(Modifier.width(16.dp))
                         Column(Modifier.weight(1f)) { Text(vacuna.nombreVacuna, fontWeight = FontWeight.Bold, fontSize = 18.sp); Text("Animal: #${vacuna.idAnimal}", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Column(horizontalAlignment = Alignment.End) { Text(vacuna.fechaAplicacion, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50)); Text("Dosis: ${vacuna.dosis}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -348,7 +348,7 @@ fun SeccionListaEnfermedades(lista: List<Enfermedad>, alCambiarEstado: (Enfermed
                             Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text(enfermedad.nombre, fontWeight = FontWeight.Black, fontSize = 20.sp); Text("Animal: #${enfermedad.idAnimal}", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                             Badge(containerColor = if(enfermedad.estado == "Activo") Color.Red else Color(0xFF4CAF50)) { Text(enfermedad.estado.uppercase(), color = Color.White, modifier = Modifier.padding(horizontal = 8.dp)) }
                         }
-                        Spacer(modifier = Modifier.height(16.dp)); Text("Síntomas: ${enfermedad.sintomas}", fontSize = 14.sp); Text("Tratamiento: ${enfermedad.tratamiento}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF008577))
+                        Spacer(modifier = Modifier.height(16.dp)); Text("Síntomas: ${enfermedad.sintomas}", fontSize = 14.sp); Text("Tratamiento: ${enfermedad.tratamiento}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         if (enfermedad.estado == "Activo") { Button(onClick = { alCambiarEstado(enfermedad, "Recuperado") }, modifier = Modifier.padding(top = 16.dp).fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE8F5E9), contentColor = Color(0xFF2E7D32)), shape = RoundedCornerShape(12.dp)) { Text("Marcar como Recuperado") } }
                     }
                 }
@@ -359,17 +359,3 @@ fun SeccionListaEnfermedades(lista: List<Enfermedad>, alCambiarEstado: (Enfermed
 
 @Composable
 fun EmptyStateSalud(mensaje: String) { Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(mensaje, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
-
-@Composable
-fun CardCategoriaLujo(
-    titulo: String, subtitulo: String, colorFondo: Color = Color.White,
-    icono: androidx.compose.ui.graphics.vector.ImageVector, colorIcono: Color = Color(0xFF008577), onClick: () -> Unit
-) {
-    Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = colorFondo), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
-        Row(modifier = Modifier.padding(24.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(52.dp).background(colorIcono.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) { Icon(icono, null, tint = colorIcono, modifier = Modifier.size(28.dp)) }
-            Spacer(modifier = Modifier.width(20.dp)); Column(modifier = Modifier.weight(1f)) { Text(text = titulo, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface); Text(text = subtitulo, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp) }
-            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}

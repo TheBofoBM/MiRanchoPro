@@ -212,7 +212,7 @@ fun TarjetaTrabajadorLujo(
                     .background(Color(0xFF008577).copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF008577), modifier = Modifier.size(28.dp))
+                Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
             }
 
             Spacer(modifier = Modifier.width(20.dp))
@@ -233,7 +233,7 @@ fun TarjetaTrabajadorLujo(
 
             Row {
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color(0xFF008577))
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFE53935))

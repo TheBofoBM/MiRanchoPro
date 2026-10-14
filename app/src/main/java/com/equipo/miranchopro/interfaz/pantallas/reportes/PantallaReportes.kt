@@ -111,7 +111,7 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
 
             if (cargando) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF008577))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
                 reporte?.let { datos ->
@@ -150,7 +150,7 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
                                     datos.conteoPorRaza.forEach { (raza, cantidad) ->
                                         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                             Text(raza, fontWeight = FontWeight.Medium)
-                                            Text(cantidad.toString(), fontWeight = FontWeight.Bold, color = Color(0xFF008577))
+                                            Text(cantidad.toString(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                         }
                                     }
                                 }
@@ -178,9 +178,9 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
                                         Text(animal.raza, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
-                                        Text("${animal.peso} kg", color = Color(0xFF008577), fontWeight = FontWeight.Bold)
+                                        Text("${animal.peso} kg", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                         val fecha = SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(animal.fechaRegistro))
-                                        Text(fecha, fontSize = 12.sp, color = Color.LightGray)
+                                        Text(fecha, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }

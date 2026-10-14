@@ -68,7 +68,7 @@ fun TarjetaTarea(
                 Text(
                     text = "${tarea.responsable}${if (!tarea.fecha.isNullOrEmpty()) "  •  ${tarea.fecha}" else ""}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.LightGray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }

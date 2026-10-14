@@ -40,7 +40,7 @@ import com.equipo.miranchopro.data.model.Usuario
 import com.equipo.miranchopro.viewmodel.LoginViewModel
 
 private val ForestGreen = Color(0xFF004D40)
-private val EmeraldPrimary = Color(0xFF00897B)
+private val EmeraldPrimary: Color @Composable get() = MaterialTheme.colorScheme.primary
 private val DarkSlate: Color @Composable get() = MaterialTheme.colorScheme.onSurface
 private val SoftGray: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 private val InputBackground: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
@@ -259,7 +259,7 @@ private fun ModernLoginInput(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(placeholder, color = Color.LightGray) },
+            placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant) },
             leadingIcon = { Icon(icon, null, tint = EmeraldPrimary, modifier = Modifier.size(20.dp)) },
             trailingIcon = if (isPassword) {
                 {

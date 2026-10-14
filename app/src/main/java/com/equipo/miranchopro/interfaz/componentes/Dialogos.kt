@@ -63,7 +63,7 @@ fun BuscadorTrabajadoresDialog(
         Surface(
             modifier = Modifier.fillMaxWidth().fillMaxHeight(0.7f),
             shape = RoundedCornerShape(16.dp),
-            color = Color.White
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Seleccionar Responsable", style = MaterialTheme.typography.titleLarge)
@@ -86,7 +86,7 @@ fun BuscadorTrabajadoresDialog(
                             headlineContent = { Text(trabajador) },
                             modifier = Modifier.clickable { onSeleccionar(trabajador) }
                         )
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                     }
                     if (listaFiltrada.isEmpty()) {
                         item {

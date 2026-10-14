@@ -1,5 +1,6 @@
 package com.equipo.miranchopro.interfaz.pantallas.inventario
 
+import com.equipo.miranchopro.interfaz.componentes.CardCategoriaLujo
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -234,7 +235,7 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
         if (viewModel.estaCargando) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF008577))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
         } else {
@@ -261,47 +262,6 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
     }
 }
 
-@Composable
-fun CardCategoriaLujo(
-    titulo: String,
-    subtitulo: String,
-    colorFondo: Color = Color.White,
-    icono: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.Pets,
-    colorIcono: Color = Color(0xFF008577),
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = colorFondo),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(24.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .background(colorIcono.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icono, contentDescription = null, tint = colorIcono, modifier = Modifier.size(28.dp))
-            }
-            Spacer(modifier = Modifier.width(20.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = titulo, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
-                Text(text = subtitulo, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-            }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeccionListaAnimales(
@@ -315,18 +275,18 @@ fun SeccionListaAnimales(
                 value = viewModel.busqueda,
                 onValueChange = { viewModel.busqueda = it },
                 placeholder = { Text("Buscar por tag, nombre o raza...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 modifier = Modifier
                     .padding(horizontal = 20.dp, vertical = 12.dp)
                     .fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    unfocusedBorderColor = Color(0xFFE0E0E0),
-                    focusedBorderColor = Color(0xFF008577),
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -417,11 +377,11 @@ fun TarjetaAnimalLujo(
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color(0xFFF1F3F4))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 if (animal.estado == "Pendiente") {
-                    Text("Toca para completar el registro con el arete y peso real", fontSize = 12.sp, color = Color(0xFF008577), fontWeight = FontWeight.Bold)
+                    Text("Toca para completar el registro con el arete y peso real", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 } else {
                     InfoItemLujo(label = "PESO", value = "${animal.peso} kg")
                     InfoItemLujo(label = "ORIGEN", value = animal.origen)

@@ -157,7 +157,7 @@ private fun ResumenLotesRapido(lotes: List<Lote>) {
         Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(12.dp)) {
                 Text("OCUPACIÓN TOTAL", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("$totalCabezas / $totalCapacidad", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF008577))
+                Text("$totalCabezas / $totalCapacidad", fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
             }
         }
     }

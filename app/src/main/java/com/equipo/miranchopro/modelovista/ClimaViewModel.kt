@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ClimaViewModel(private val context: android.content.Context? = null) : ViewModel() {
+class ClimaViewModel(context: android.content.Context? = null) : ViewModel() {
     private val apiService = WeatherApiService.create()
     private val _climaState = MutableStateFlow<WeatherResponse?>(null)
     val climaState: StateFlow<WeatherResponse?> = _climaState

@@ -66,7 +66,7 @@ fun PantallaClimaDetallado(
             if (cargandoClima) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color = Color(0xFF008577)
+                    color = MaterialTheme.colorScheme.primary
                 )
             } else if (errorClima != null) {
                 Column(Modifier.align(Alignment.Center).padding(16.dp)) {

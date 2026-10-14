@@ -36,10 +36,10 @@ import coil.compose.AsyncImage
 import com.equipo.miranchopro.modelovista.EditarAnimalViewModel
 import kotlinx.coroutines.flow.collectLatest
 
-private val ColorTituloSeccion = Color(0xFF00897B)
+private val ColorTituloSeccion: Color @Composable get() = MaterialTheme.colorScheme.primary
 private val ColorIconoGris: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 private val ColorTextoEtiqueta: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
-private val EmeraldPrimary = Color(0xFF00897B)
+private val EmeraldPrimary: Color @Composable get() = MaterialTheme.colorScheme.primary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -262,7 +262,7 @@ fun PantallaEditarAnimal(
                             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         ) { Icon(Icons.Default.Close, "Quitar fotografía", tint = Color.White) }
                     } else {
-                        Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
+                        Icon(Icons.Default.AddAPhoto, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
                     }
                 }
             }
@@ -407,10 +407,10 @@ fun CampoEditable(label: String, valor: String, onValueChange: (String) -> Unit,
             shape = RoundedCornerShape(12.dp),
             textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black,
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 focusedBorderColor = ColorTituloSeccion,
                 unfocusedBorderColor = Color(0xFF9E9E9E),
                 cursorColor = ColorTituloSeccion

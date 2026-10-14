@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.equipo.miranchopro.modelovista.OperacionViewModel
 
 @Composable
@@ -31,16 +32,28 @@ fun EstadoOperacion(viewModel: OperacionViewModel) {
 
 @Composable
 fun FormularioDialogo(titulo: String, onDismiss: () -> Unit, guardando: Boolean = false, error: String? = null, contenido: @Composable ColumnScope.() -> Unit) {
-    Dialog(onDismissRequest = { if (!guardando) onDismiss() }) {
-        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.fillMaxWidth().heightIn(max = 640.dp).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(titulo, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                    IconButton(onClick = onDismiss, enabled = !guardando) { Icon(Icons.Default.Close, "Cerrar formulario") }
+    Dialog(
+        onDismissRequest = { if (!guardando) onDismiss() },
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        Box(
+            Modifier.fillMaxSize().systemBarsPadding().imePadding().padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(Modifier.fillMaxWidth().heightIn(max = 640.dp).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(titulo, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                        IconButton(onClick = onDismiss, enabled = !guardando) { Icon(Icons.Default.Close, "Cerrar formulario") }
+                    }
+                    if (guardando) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    MensajeFormulario(error)
+                    contenido()
                 }
-                if (guardando) LinearProgressIndicator(Modifier.fillMaxWidth())
-                MensajeFormulario(error)
-                contenido()
             }
         }
     }

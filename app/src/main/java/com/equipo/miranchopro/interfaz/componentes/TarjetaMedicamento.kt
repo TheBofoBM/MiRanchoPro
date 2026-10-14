@@ -38,14 +38,14 @@ fun TarjetaMedicamento(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                color = Color(0xFFE0F2F1),
+                color = MaterialTheme.colorScheme.primaryContainer,
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
                     Icons.Default.Inventory,
                     contentDescription = null,
-                    tint = Color(0xFF00897B),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(12.dp)
                 )
             }
@@ -74,7 +74,7 @@ fun TarjetaMedicamento(
 
             Row {
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color(0xFF00897B))
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFE57373))

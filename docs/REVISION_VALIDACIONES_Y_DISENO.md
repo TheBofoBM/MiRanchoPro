@@ -2,6 +2,8 @@
 
 Fecha: 14 de octubre de 2026.
 
+Seguimiento posterior: las correcciones implementadas, sus pruebas, capturas y puntos pendientes están documentados en [AVANCE_02_VALIDACIONES_Y_TEMA.md](AVANCE_02_VALIDACIONES_Y_TEMA.md). Este informe conserva el diagnóstico previo a esos cambios.
+
 La prioridad es conseguir registros confiables y flujos completos antes de ampliar Pro. Hay errores que pueden alterar existencias, pesos, fechas y ocupaciones; también hay pantallas que no explican sus errores y formularios que quedan recortados. La compilación correcta no detecta estos problemas.
 
 Esta entrega documenta la revisión; no modifica la lógica ni el diseño de la aplicación.

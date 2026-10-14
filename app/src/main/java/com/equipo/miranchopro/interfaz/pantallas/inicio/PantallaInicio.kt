@@ -181,7 +181,7 @@ fun PantallaInicio(
                         Text(
                             text = sugerenciaClima,
                             fontSize = 14.sp,
-                            color = Color(0xFF008577),
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(top = 4.dp)
                         )
@@ -224,7 +224,7 @@ fun PantallaInicio(
                     Text(
                         "Ver más",
                         fontSize = 12.sp,
-                        color = Color(0xFF008577),
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable { navController.navigate(Pantalla.ClimaDetallado.ruta) }
                     )
@@ -245,7 +245,7 @@ fun PantallaInicio(
                 ) {
                     if (cargandoClima) {
                         Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color(0xFF008577))
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     } else if (errorClima != null) {
                         Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
@@ -268,7 +268,7 @@ fun PantallaInicio(
                                     VerticalDivider(
                                         modifier = Modifier.height(40.dp),
                                         thickness = 1.dp,
-                                        color = Color.LightGray.copy(alpha = 0.5f)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                     )
                                 }
                             }

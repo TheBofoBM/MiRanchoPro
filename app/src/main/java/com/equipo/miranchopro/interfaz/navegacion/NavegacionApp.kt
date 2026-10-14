@@ -215,9 +215,11 @@ fun NavegacionApp() {
                                     }
                                 },
                                 colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = Color(0xFF008577),
-                                    selectedTextColor = Color(0xFF008577),
-                                    indicatorColor = Color(0xFFE0F2F1)
+                                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer
                                 )
                             )
                         }

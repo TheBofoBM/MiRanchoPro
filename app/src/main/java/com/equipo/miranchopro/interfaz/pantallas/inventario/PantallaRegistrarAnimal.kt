@@ -39,7 +39,7 @@ import com.equipo.miranchopro.modelovista.RegistrarAnimalViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 private val ForestGreen = Color(0xFF004D40)
-private val EmeraldPrimary = Color(0xFF00897B)
+private val EmeraldPrimary: Color @Composable get() = MaterialTheme.colorScheme.primary
 private val ColorFondo: Color @Composable get() = MaterialTheme.colorScheme.background
 private val ColorGrisSuave: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
 
@@ -216,8 +216,8 @@ fun SelectorLoteDropdown(loteSeleccionado: String, onLoteChange: (String) -> Uni
                 unfocusedContainerColor = ColorGrisSuave,
                 focusedBorderColor = EmeraldPrimary,
                 unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
             )
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -274,8 +274,8 @@ fun CampoPremium(label: String, valor: String, onValueChange: (String) -> Unit, 
                 unfocusedContainerColor = ColorGrisSuave,
                 focusedBorderColor = EmeraldPrimary,
                 unfocusedBorderColor = Color.Transparent,
-                focusedTextColor = Color.Black,
-                unfocusedTextColor = Color.Black
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
             )
         )
     }

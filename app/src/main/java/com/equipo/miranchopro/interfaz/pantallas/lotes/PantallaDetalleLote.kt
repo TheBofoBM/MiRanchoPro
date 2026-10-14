@@ -180,7 +180,7 @@ private fun TarjetaCapacidad(lote: Lote, progreso: Float, colorIndicador: Color)
                 }
             }
             Box(Modifier.size(70.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(progress = { 1f }, modifier = Modifier.fillMaxSize(), color = Color(0xFFEEEEEE), strokeWidth = 8.dp, strokeCap = StrokeCap.Round)
+                CircularProgressIndicator(progress = { 1f }, modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.outlineVariant, strokeWidth = 8.dp, strokeCap = StrokeCap.Round)
                 CircularProgressIndicator(progress = { progreso }, modifier = Modifier.fillMaxSize(), color = colorIndicador, strokeWidth = 8.dp, strokeCap = StrokeCap.Round)
                 Text("${(progreso * 100).toInt()}%", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colorIndicador)
             }
@@ -204,7 +204,7 @@ private fun TarjetaAcciones(estaVacio: Boolean, onMover: () -> Unit, onEliminar:
 private fun TarjetaAnimalCompacta(animal: Animal, onClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }, shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(color = Color(0xFFF1F3F4), shape = RoundedCornerShape(8.dp), modifier = Modifier.size(40.dp)) {
+            Surface(color = MaterialTheme.colorScheme.outlineVariant, shape = RoundedCornerShape(8.dp), modifier = Modifier.size(40.dp)) {
                 Box(contentAlignment = Alignment.Center) { Text("🐄") }
             }
             Spacer(Modifier.width(12.dp))
@@ -212,7 +212,7 @@ private fun TarjetaAnimalCompacta(animal: Animal, onClick: () -> Unit) {
                 Text(animal.idArete, fontWeight = FontWeight.Bold)
                 Text(animal.raza, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("${animal.peso} kg", fontWeight = FontWeight.Black, color = Color(0xFF008577))
+            Text("${animal.peso} kg", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

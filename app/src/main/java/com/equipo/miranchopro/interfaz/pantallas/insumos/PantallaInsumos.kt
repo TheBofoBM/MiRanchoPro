@@ -214,14 +214,14 @@ fun TarjetaInsumo(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
-                    color = Color(0xFFE0F2F1),
+                    color = MaterialTheme.colorScheme.primaryContainer,
                     shape = CircleShape,
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
                         Icons.Default.Inventory2,
                         contentDescription = null,
-                        tint = Color(0xFF008577),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(8.dp)
                     )
                 }
@@ -252,7 +252,7 @@ fun TarjetaInsumo(
                 }
                 Row {
                     TextButton(onClick = onRegistrarConsumo) {
-                        Text("Gastar", color = Color(0xFF008577))
+                        Text("Gastar", color = MaterialTheme.colorScheme.primary)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
