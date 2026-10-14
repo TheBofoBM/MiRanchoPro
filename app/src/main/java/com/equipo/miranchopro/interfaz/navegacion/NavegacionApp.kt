@@ -113,7 +113,7 @@ fun NavegacionApp() {
     val scope = rememberCoroutineScope()
     
     val database = remember { RanchoDatabase.getDatabase(context) }
-    val repoAnimales = remember { AnimalRepository(database.animalDao()) }
+    val repoAnimales = remember { AnimalRepository(database.animalDao(), database.embarazoDao()) }
     val repoLotes = remember { LoteRepository(database.loteDao()) }
     val repoSalud = remember { SaludRepository(database.medicamentoDao(), database.vacunacionDao(), database.enfermedadDao()) }
     val repoTareas = remember { TareaRepository(database.tareaDao()) }
@@ -335,7 +335,7 @@ fun NavegacionApp() {
                         navArgument("idTemp") { type = NavType.StringType; nullable = true }
                     )
                 ) { entrada ->
-                    val regViewModel: RegistrarAnimalViewModel = viewModel { RegistrarAnimalViewModel(repoAnimales) }
+                    val regViewModel: RegistrarAnimalViewModel = viewModel { RegistrarAnimalViewModel(repoAnimales, repoLotes) }
                     LaunchedEffect(entrada.arguments) {
                         entrada.arguments?.getString("idTemp")?.let { regViewModel.cargarParaCompletar(it) } 
                             ?: entrada.arguments?.getString("tipo")?.let { regViewModel.tipo = it ?: "Becerro" }
@@ -348,7 +348,7 @@ fun NavegacionApp() {
                     arguments = listOf(navArgument("idArete") { type = NavType.StringType })
                 ) { entrada ->
                     val idArete = entrada.arguments?.getString("idArete") ?: ""
-                    val editViewModel: EditarAnimalViewModel = viewModel { EditarAnimalViewModel(repoAnimales) }
+                    val editViewModel: EditarAnimalViewModel = viewModel { EditarAnimalViewModel(repoAnimales, repoLotes) }
                     PantallaEditarAnimal(idArete = idArete, viewModel = editViewModel, alVolver = { navController.popBackStack() })
                 }
             }

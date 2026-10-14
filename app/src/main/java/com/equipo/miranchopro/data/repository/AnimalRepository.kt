@@ -1,12 +1,18 @@
 package com.equipo.miranchopro.data.repository
 
 import com.equipo.miranchopro.data.local.dao.AnimalDao
+import com.equipo.miranchopro.data.local.dao.EmbarazoDao
 import com.equipo.miranchopro.data.model.Animal
+import com.equipo.miranchopro.data.model.Embarazo
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CancellationException
 import java.text.SimpleDateFormat
 import java.util.*
 
-class AnimalRepository(private val animalDao: AnimalDao) {
+class AnimalRepository(
+    private val animalDao: AnimalDao,
+    private val embarazoDao: EmbarazoDao
+) {
 
     fun obtenerTodos(): Flow<List<Animal>> = animalDao.obtenerTodos()
 
@@ -21,11 +27,22 @@ class AnimalRepository(private val animalDao: AnimalDao) {
         }
     }
 
+    suspend fun completarNacimientoPendiente(idTemporal: String, animal: Animal): Result<Boolean> {
+        return try {
+            animalDao.completarNacimientoPendiente(idTemporal, animal)
+            Result.success(true)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun registrarNacimientoRapido(): Result<String> {
         return try {
             val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
             val horaActual = sdf.format(Date())
-            val idTemporal = "TEMP-${System.currentTimeMillis() % 10000}"
+            val idTemporal = "TEMP-${UUID.randomUUID()}"
             
             val animalPendiente = Animal(
                 idArete = idTemporal,
@@ -60,4 +77,32 @@ class AnimalRepository(private val animalDao: AnimalDao) {
             false
         }
     }
+
+    // --- Funciones de Embarazo ---
+
+    suspend fun registrarEmbarazo(vacaId: String, fechaInseminacion: Long, tipo: String, notas: String): Result<Boolean> {
+        return try {
+            // Calcular fecha probable de parto (283 días después)
+            val calendar = Calendar.getInstance().apply {
+                timeInMillis = fechaInseminacion
+                add(Calendar.DAY_OF_YEAR, 283)
+            }
+            
+            val embarazo = Embarazo(
+                vacaId = vacaId,
+                fechaInseminacion = fechaInseminacion,
+                tipo = tipo,
+                fechaProbableParto = calendar.timeInMillis,
+                notas = notas
+            )
+            embarazoDao.registrarEmbarazo(embarazo)
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getEmbarazoActivo(vacaId: String): Embarazo? = embarazoDao.getEmbarazoActivoPorVaca(vacaId)
+
+    fun getHistorialEmbarazos(vacaId: String): Flow<List<Embarazo>> = embarazoDao.getHistorialEmbarazos(vacaId)
 }

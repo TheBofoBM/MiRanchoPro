@@ -17,10 +17,11 @@ import com.equipo.miranchopro.data.model.*
         Medicamento::class, 
         Vacunacion::class, 
         Enfermedad::class,
-        Tarea::class
+        Tarea::class,
+        Embarazo::class
     ], 
-    version = 9, 
-    exportSchema = false
+    version = 12,
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class RanchoDatabase : RoomDatabase() {
@@ -33,20 +34,23 @@ abstract class RanchoDatabase : RoomDatabase() {
     abstract fun vacunacionDao(): VacunacionDao
     abstract fun enfermedadDao(): EnfermedadDao
     abstract fun tareaDao(): TareaDao
+    abstract fun embarazoDao(): EmbarazoDao
 
     companion object {
         @Volatile
         private var INSTANCE: RanchoDatabase? = null
 
+        internal fun builder(context: Context, name: String): RoomDatabase.Builder<RanchoDatabase> {
+            return Room.databaseBuilder(
+                context.applicationContext,
+                RanchoDatabase::class.java,
+                name
+            ).addMigrations(*RanchoMigrations.ALL)
+        }
+
         fun getDatabase(context: Context): RanchoDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    RanchoDatabase::class.java,
-                    "rancho_database"
-                )
-                .fallbackToDestructiveMigration()
-                .build()
+                val instance = builder(context, "rancho_database").build()
                 INSTANCE = instance
                 instance
             }

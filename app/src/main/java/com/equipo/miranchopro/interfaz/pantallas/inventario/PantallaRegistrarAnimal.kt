@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -253,11 +254,14 @@ fun PantallaRegistrarAnimal(
                             trailingIcon = { if(!viewModel.esEdicionPendiente) ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTipo) },
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
+                            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = ColorGrisSuave,
                                 unfocusedContainerColor = ColorGrisSuave,
                                 focusedBorderColor = EmeraldPrimary,
-                                unfocusedBorderColor = Color.Transparent
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black
                             ),
                             enabled = !viewModel.esEdicionPendiente
                         )
@@ -272,14 +276,18 @@ fun PantallaRegistrarAnimal(
                 }
 
                 // --- SECCIÓN 2: NACIMIENTO ---
-                CardRegistroModerno("Origen y Nacimiento") {
+                CardRegistroModerno("Origen y Ubicación") {
                     if (viewModel.esEdicionPendiente) {
                         ItemLecturaElegante("Fecha Capturada", viewModel.fechaNacimiento, Icons.Outlined.CalendarMonth)
                         ItemLecturaElegante("Hora de Nacimiento", viewModel.horaNacimientoRegistrada, Icons.Outlined.AccessTime)
-                        ItemLecturaElegante("Lote Sugerido", viewModel.ubicacion, Icons.Outlined.LocationOn)
+                        
+                        Text("Lote Destino", fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+                        SelectorLoteDropdown(viewModel.ubicacion, { viewModel.ubicacion = it }, viewModel.listaLotes)
                     } else {
                         CampoPremium("Fecha de Nacimiento *", viewModel.fechaNacimiento, { viewModel.fechaNacimiento = it }, "dd/mm/aaaa")
-                        CampoPremium("Ubicación / Lote", viewModel.ubicacion, { viewModel.ubicacion = it }, "Ej: Lote A")
+                        
+                        Text("Ubicación / Lote", fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+                        SelectorLoteDropdown(viewModel.ubicacion, { viewModel.ubicacion = it }, viewModel.listaLotes)
                     }
                 }
 
@@ -306,6 +314,37 @@ fun PantallaRegistrarAnimal(
                     }
                 }
                 Spacer(modifier = Modifier.height(60.dp))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SelectorLoteDropdown(loteSeleccionado: String, onLoteChange: (String) -> Unit, listaLotes: List<String>) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = loteSeleccionado, onValueChange = {}, readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = ColorGrisSuave,
+                unfocusedContainerColor = ColorGrisSuave,
+                focusedBorderColor = EmeraldPrimary,
+                unfocusedBorderColor = Color(0xFFE0E0E0),
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            listaLotes.forEach { lote ->
+                DropdownMenuItem(text = { Text(lote) }, onClick = { onLoteChange(lote); expanded = false })
             }
         }
     }
@@ -350,13 +389,14 @@ fun CampoPremium(label: String, valor: String, onValueChange: (String) -> Unit, 
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = k),
             shape = RoundedCornerShape(16.dp),
+            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = ColorGrisSuave,
                 unfocusedContainerColor = ColorGrisSuave,
                 focusedBorderColor = EmeraldPrimary,
                 unfocusedBorderColor = Color.Transparent,
-                focusedTextColor = Color(0xFF263238),
-                unfocusedTextColor = Color(0xFF263238)
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
             )
         )
     }

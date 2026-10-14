@@ -83,6 +83,9 @@ fun PantallaEditarAnimal(
                 is EditarAnimalViewModel.EventoUI.Error -> {
                     snackbarHostState.showSnackbar(evento.mensaje)
                 }
+                is EditarAnimalViewModel.EventoUI.EmbarazoRegistrado -> {
+                    snackbarHostState.showSnackbar("Gestación registrada con éxito")
+                }
             }
         }
     }
@@ -147,7 +150,7 @@ fun PantallaEditarAnimal(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.confirmarFotoCamara()
+                        tempUriCamara?.let { viewModel.confirmarFotoCamara(it) }
                         mostrarConfirmacionCamara = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
@@ -162,6 +165,43 @@ fun PantallaEditarAnimal(
                         mostrarConfirmacionCamara = false
                     }
                 ) { Text("Tomar de nuevo") }
+            }
+        )
+    }
+
+    // Diálogo para registrar gestación
+    if (viewModel.mostrarDialogoRegistroEmbarazo) {
+        AlertDialog(
+            onDismissRequest = { viewModel.mostrarDialogoRegistroEmbarazo = false },
+            title = { Text("Registrar Gestación", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Ingresa la fecha de inseminación o monta natural para calcular el parto (9 lunas / 283 días).")
+                    OutlinedTextField(
+                        value = viewModel.fechaInseminacionSeleccionada,
+                        onValueChange = { viewModel.fechaInseminacionSeleccionada = it },
+                        label = { Text("Fecha (dd/mm/aaaa)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    Text("Tipo de cruce:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = viewModel.tipoMating == "Monta Natural", onClick = { viewModel.tipoMating = "Monta Natural" })
+                        Text("Monta Natural")
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = viewModel.tipoMating == "Inseminación", onClick = { viewModel.tipoMating = "Inseminación" })
+                        Text("Inseminación Artificial")
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.registrarGestacion() }, colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)) {
+                    Text("Calcular y Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.mostrarDialogoRegistroEmbarazo = false }) { Text("Cancelar") }
             }
         )
     }
@@ -224,6 +264,39 @@ fun PantallaEditarAnimal(
                 }
             }
 
+            // --- SECCIÓN: GESTACIÓN ---
+            if (viewModel.tipo in listOf("Vaca", "Vaquilla", "Becerra")) {
+                CardSeccionEditar("Seguimiento de Gestación") {
+                    if (viewModel.embarazoActivo != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CalendarMonth, null, tint = ColorTituloSeccion)
+                            Spacer(Modifier.width(8.dp))
+                            Column {
+                                Text("Fecha Probable de Parto", fontSize = 12.sp, color = Color.Gray)
+                                Text(viewModel.fechaProbablePartoFormateada ?: "", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = ColorTituloSeccion)
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Nota: Basado en el ciclo biológico de 283 días (aprox. 9 lunas). Se recomienda vigilar los cambios de fase lunar cercanos a esta fecha.",
+                            fontSize = 12.sp,
+                            color = Color.DarkGray
+                        )
+                    } else {
+                        Button(
+                            onClick = { viewModel.mostrarDialogoRegistroEmbarazo = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = ColorTituloSeccion),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Add, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Registrar Nueva Gestación")
+                        }
+                    }
+                }
+            }
+
             // --- SECCIÓN: IDENTIFICACIÓN (LECTURA) ---
             CardSeccionEditar("Identificación") {
                 InfoItemLecturaFicha("ID / Arete", viewModel.idArete, Icons.Outlined.Tag)
@@ -233,16 +306,28 @@ fun PantallaEditarAnimal(
                 InfoItemLecturaFicha("Edad Calculada", viewModel.edad, Icons.Outlined.Cake)
             }
 
+            // --- SECCIÓN: UBICACIÓN (EDITABLE CON DROPDOWN) ---
+            CardSeccionEditar("Ubicación Actual") {
+                Text("Lote Registrado", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Spacer(Modifier.height(8.dp))
+                // Esta función se toma de PantallaRegistrarAnimal.kt para evitar duplicidad
+                SelectorLoteDropdown(
+                    loteSeleccionado = viewModel.ubicacion,
+                    onLoteChange = { nuevaUbicacion -> viewModel.ubicacion = nuevaUbicacion },
+                    listaLotes = viewModel.listaLotes
+                )
+            }
+
             // --- SECCIÓN: NACIMIENTO Y ORIGEN ---
             CardSeccionEditar("Nacimiento y Origen") {
-                InfoItemLecturaFicha("Ubicación / Lote", viewModel.ubicacion, Icons.Outlined.LocationOn)
                 InfoItemLecturaFicha("Origen", viewModel.origen, Icons.Outlined.AutoAwesome)
-                InfoItemLecturaFicha("Fecha de Registro", viewModel.fechaNacimiento, Icons.Outlined.CalendarToday)
+                InfoItemLecturaFicha("Fecha de Registro en App", viewModel.fechaRegistroFormateada, Icons.Outlined.AppRegistration)
                 InfoItemLecturaFicha("Hora de Nacimiento", viewModel.horaNacimiento, Icons.Outlined.AccessTime)
             }
 
             // --- SECCIÓN: DATOS EDITABLES ---
-            CardSeccionEditar("Características Físicas") {
+            CardSeccionEditar("Características y Fechas") {
+                CampoEditable("Fecha de Nacimiento (dd/mm/aaaa)", viewModel.fechaNacimiento, { viewModel.fechaNacimiento = it })
                 CampoEditable("Peso (kg)", viewModel.peso, { viewModel.peso = it }, KeyboardType.Decimal)
                 CampoEditable("Color", viewModel.color, { viewModel.color = it })
                 CampoEditable("Marcas / Señas", viewModel.marcas, { viewModel.marcas = it })

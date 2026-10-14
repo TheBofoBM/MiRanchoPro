@@ -19,6 +19,7 @@ data class Animal(
     val ubicacion: String = "Lote A",
     val estado: String = "Sano", // "Sano", "Baja", "Pendiente"
     val fechaRegistro: Long = System.currentTimeMillis(),
+    val fechaNacimiento: Long? = null, // Fecha real de nacimiento del animal
     val horaNacimiento: String? = null, // Para el registro rápido de nacimientos
     val fotoPath: String? = null // Ruta de la foto almacenada en el dispositivo
 )
