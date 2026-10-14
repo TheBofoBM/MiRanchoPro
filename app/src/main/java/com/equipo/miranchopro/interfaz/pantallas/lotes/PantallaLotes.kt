@@ -51,11 +51,11 @@ fun PantallaLotes(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(bottom = paddingValores.calculateBottomPadding())
         ) {
             Surface(
-                color = Color.Black,
+                color = Color(0xFF004D40),
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -93,7 +93,7 @@ fun PantallaLotes(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Perfil") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Perfil.ruta)
                                 },
@@ -101,7 +101,7 @@ fun PantallaLotes(
                             )
                             DropdownMenuItem(
                                 text = { Text("Configuración") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Configuracion.ruta)
                                 },
@@ -110,7 +110,7 @@ fun PantallaLotes(
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Cerrar sesión") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Login.ruta) {
                                         popUpTo(0)
@@ -153,10 +153,10 @@ private fun ResumenLotesRapido(lotes: List<Lote>) {
     ) {
         val totalCabezas = lotes.sumOf { it.ocupacionActual }
         val totalCapacidad = lotes.sumOf { it.capacidadMaxima }
-        
-        Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+
+        Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(12.dp)) {
-                Text("OCUPACIÓN TOTAL", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                Text("OCUPACIÓN TOTAL", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("$totalCabezas / $totalCapacidad", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF008577))
             }
         }
@@ -172,7 +172,7 @@ fun TarjetaLoteLujo(lote: Lote, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -185,7 +185,7 @@ fun TarjetaLoteLujo(lote: Lote, onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text("${lote.ocupacionActual}/${lote.capacidadMaxima}", fontSize = 20.sp, fontWeight = FontWeight.Black)
-            Text("Cabezas", fontSize = 12.sp, color = Color.Gray)
+            Text("Cabezas", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { progreso },

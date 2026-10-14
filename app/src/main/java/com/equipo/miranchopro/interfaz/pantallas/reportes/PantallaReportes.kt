@@ -25,6 +25,7 @@ import java.util.*
 @Composable
 fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) {
     val reporte by viewModel.reporte.collectAsState()
+    val error by viewModel.error.collectAsState()
     val cargando by viewModel.estaCargando.collectAsState()
     var menuExpandido by remember { mutableStateOf(false) }
 
@@ -32,15 +33,15 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
         viewModel.cargarReporte()
     }
 
-    Scaffold { padding ->
+    Scaffold(snackbarHost={ error?.let { mensaje -> Column {Text(mensaje);TextButton(onClick={viewModel.cargarReporte()}){Text("Reintentar")}} } }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(bottom = padding.calculateBottomPadding())
         ) {
             Surface(
-                color = Color.Black,
+                color = Color(0xFF004D40),
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -78,7 +79,7 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Perfil") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Perfil.ruta)
                                 },
@@ -86,7 +87,7 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
                             )
                             DropdownMenuItem(
                                 text = { Text("Configuración") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Configuracion.ruta)
                                 },
@@ -95,7 +96,7 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Cerrar sesión") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Login.ruta) {
                                         popUpTo(0)
@@ -122,26 +123,30 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            Text("RESUMEN DE INVENTARIO", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 2.sp)
+                            Text("INVENTARIO ACTIVO", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 2.sp)
                         }
 
                         item {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 TarjetaEstadisticaLujo("Total Animales", datos.totalAnimales.toString(), Modifier.weight(1f))
-                                TarjetaEstadisticaLujo("Peso Promedio", "${String.format("%.1f", datos.pesoPromedio)} kg", Modifier.weight(1f))
+                                TarjetaEstadisticaLujo("Peso Promedio", "${String.format(Locale.getDefault(), "%.1f", datos.pesoPromedio)} kg", Modifier.weight(1f))
                             }
                         }
 
                         item {
-                            Text("DISTRIBUCIÓN POR RAZA", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 2.sp)
+                            Text("DISTRIBUCIÓN POR RAZA", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 2.sp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
                                 Column(Modifier.padding(20.dp)) {
+                                    if(datos.totalAnimales==0) {
+                                        Text("Aún no hay animales activos para generar estadísticas.")
+                                        Button(onClick={navController.navigate(Pantalla.RegistrarAnimal.crearRuta())}){Text("Registrar el primero")}
+                                    }
                                     datos.conteoPorRaza.forEach { (raza, cantidad) ->
                                         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                             Text(raza, fontWeight = FontWeight.Medium)
@@ -153,14 +158,14 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
                         }
 
                         item {
-                            Text("REGISTROS RECIENTES", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 2.sp)
+                            Text("REGISTROS RECIENTES", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 2.sp)
                         }
 
                         items(datos.animalesRecientes.take(5)) { animal ->
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 elevation = CardDefaults.cardElevation(1.dp)
                             ) {
                                 Row(
@@ -170,7 +175,7 @@ fun PantallaReportes(navController: NavController, viewModel: ReporteViewModel) 
                                 ) {
                                     Column {
                                         Text("#${animal.idArete}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                        Text(animal.raza, color = Color.Gray, fontSize = 14.sp)
+                                        Text(animal.raza, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
                                         Text("${animal.peso} kg", color = Color(0xFF008577), fontWeight = FontWeight.Bold)
@@ -192,13 +197,13 @@ fun TarjetaEstadisticaLujo(titulo: String, valor: String, modifier: Modifier = M
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.Start) {
-            Text(titulo, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Text(titulo, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(valor, fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color.Black)
+            Text(valor, fontSize = 24.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

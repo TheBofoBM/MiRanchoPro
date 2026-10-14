@@ -45,7 +45,22 @@ abstract class RanchoDatabase : RoomDatabase() {
                 context.applicationContext,
                 RanchoDatabase::class.java,
                 name
-            ).addMigrations(*RanchoMigrations.ALL)
+            ).addMigrations(*RanchoMigrations.ALL).addCallback(object : Callback() {
+                override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                    super.onOpen(db)
+                    // Conversión de credenciales antiguas; se conserva el acceso existente.
+                    val pendientes = mutableListOf<Pair<String, String>>()
+                    db.query("SELECT correo, contrasena FROM usuarios").use { cursor ->
+                        while (cursor.moveToNext()) {
+                            val clave = cursor.getString(1)
+                            if (!com.equipo.miranchopro.utils.Claves.esHash(clave)) pendientes += cursor.getString(0) to clave
+                        }
+                    }
+                    pendientes.forEach { (correo, clave) ->
+                        db.execSQL("UPDATE usuarios SET contrasena = ? WHERE correo = ?", arrayOf(com.equipo.miranchopro.utils.Claves.proteger(clave), correo))
+                    }
+                }
+            })
         }
 
         fun getDatabase(context: Context): RanchoDatabase {

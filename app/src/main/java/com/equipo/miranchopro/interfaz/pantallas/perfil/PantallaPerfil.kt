@@ -1,134 +1,59 @@
 package com.equipo.miranchopro.interfaz.pantallas.perfil
-
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-
+import com.equipo.miranchopro.data.local.RanchoDatabase
+import com.equipo.miranchopro.data.model.Usuario
+import com.equipo.miranchopro.interfaz.componentes.*
+import com.equipo.miranchopro.utils.*
+import kotlinx.coroutines.*
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaPerfil(navController: NavController) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
-    ) {
-        Surface(
-            color = Color.Black,
-            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(start = 12.dp, top = 4.dp, end = 24.dp, bottom = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = Color.White)
+fun PantallaPerfil(navController: NavController, usuario: Usuario?) {
+    val context=LocalContext.current;val scope=rememberCoroutineScope()
+    var cambiarClave by remember { mutableStateOf(false) };var mensaje by remember { mutableStateOf<String?>(null) }
+    var guardando by remember { mutableStateOf(false) };var error by remember { mutableStateOf<String?>(null) }
+    if(cambiarClave) {
+        var actual by rememberSaveable { mutableStateOf("") };var nueva by rememberSaveable { mutableStateOf("") };var confirmar by rememberSaveable { mutableStateOf("") }
+        FormularioDialogo("Cambiar contraseña",{cambiarClave=false},guardando,error) {
+            CampoFormulario("Contraseña actual",actual,{actual=it},teclado=KeyboardType.Password,transformacion=PasswordVisualTransformation())
+            CampoFormulario("Nueva contraseña",nueva,{nueva=it},teclado=KeyboardType.Password,transformacion=PasswordVisualTransformation())
+            CampoFormulario("Confirmar contraseña",confirmar,{confirmar=it},teclado=KeyboardType.Password,transformacion=PasswordVisualTransformation())
+            Button(onClick={
+                error=when {nueva.length<6->"Usa al menos 6 caracteres";nueva!=confirmar->"Las contraseñas no coinciden";actual.isBlank()->"Ingresa la contraseña actual";else->null}
+                if(error==null && usuario!=null && !guardando) {
+                    guardando=true
+                    scope.launch {
+                        try {
+                            val dao=RanchoDatabase.getDatabase(context).usuarioDao()
+                            val cuenta=dao.buscarPorCorreo(usuario.correo) ?: throw IllegalArgumentException("La cuenta ya no existe")
+                            require(withContext(Dispatchers.Default){Claves.verificar(actual,cuenta.contrasena)}){"La contraseña actual no es correcta"}
+                            val hash=withContext(Dispatchers.Default){Claves.proteger(nueva)}
+                            require(dao.cambiarClave(cuenta.correo,cuenta.contrasena,hash)==1){"La contraseña cambió; vuelve a intentarlo"}
+                            cambiarClave=false;mensaje="Contraseña actualizada"
+                        } catch(e: CancellationException){throw e} catch(e: Exception){error=Validaciones.mensaje(e)} finally{guardando=false}
+                    }
                 }
-                Spacer(modifier = Modifier.width(4.dp))
-                Column {
-                    Text(
-                        text = "Mi Perfil",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White,
-                        letterSpacing = (-1).sp
-                    )
-                    Text(
-                        text = "Gestión de cuenta",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF00BFA5)
-                    )
-                }
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Surface(
-                modifier = Modifier.size(100.dp),
-                shape = CircleShape,
-                color = Color(0xFF00BFA5).copy(alpha = 0.1f)
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(60.dp).padding(16.dp),
-                    tint = Color(0xFF00BFA5)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text("Administrador", fontWeight = FontWeight.Black, fontSize = 22.sp)
-            Text("admin@mirancho.pro", color = Color.Gray, fontSize = 15.sp)
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    ProfileItem(icon = Icons.Default.Email, label = "Correo Electrónico", value = "admin@mirancho.pro")
-                    HorizontalDivider(color = Color(0xFFF1F3F4))
-                    ProfileItem(icon = Icons.Default.Badge, label = "Rol", value = "Propietario / Admin")
-                    HorizontalDivider(color = Color(0xFFF1F3F4))
-                    ProfileItem(icon = Icons.Default.Phone, label = "Teléfono", value = "+52 123 456 7890")
-                }
-            }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            Button(
-                onClick = { /* Edición próximamente */ },
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Editar Perfil", fontWeight = FontWeight.Bold)
-            }
+            },enabled=!guardando){Text("Guardar contraseña")}
         }
     }
-}
-
-@Composable
-private fun ProfileItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .background(Color(0xFF008577).copy(alpha = 0.1f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, null, tint = Color(0xFF008577), modifier = Modifier.size(18.dp))
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(label, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-            Text(value, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+    Scaffold(topBar={TopAppBar(title={Text("Mi perfil")},navigationIcon={IconButton(onClick={navController.popBackStack()}){Icon(Icons.AutoMirrored.Filled.ArrowBack,"Volver")}})}) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
+            Text(usuario?.correo ?: "Sin sesión",style=MaterialTheme.typography.headlineSmall)
+            Text(if(usuario?.rol?.equals("Administrador",true)==true) "Dueño / administrador" else "Empleado",style=MaterialTheme.typography.titleMedium)
+            Text("Esta cuenta permite acceder al rancho guardado en este dispositivo.")
+            mensaje?.let{Text(it)};Button(onClick={error=null;cambiarClave=true},enabled=usuario!=null){Text("Cambiar contraseña")}
         }
     }
 }

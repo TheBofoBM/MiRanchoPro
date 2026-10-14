@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.CancellationException
 import java.text.SimpleDateFormat
 import java.util.*
+import com.equipo.miranchopro.utils.Validaciones
 
 class AnimalRepository(
     private val animalDao: AnimalDao,
@@ -20,7 +21,8 @@ class AnimalRepository(
 
     suspend fun registrarAnimal(animal: Animal): Result<Boolean> {
         return try {
-            animalDao.insertar(animal)
+            validarAnimal(animal)
+            animalDao.insertarValidado(animal)
             Result.success(true)
         } catch (e: Exception) {
             Result.failure(e)
@@ -29,6 +31,7 @@ class AnimalRepository(
 
     suspend fun completarNacimientoPendiente(idTemporal: String, animal: Animal): Result<Boolean> {
         return try {
+            validarAnimal(animal)
             animalDao.completarNacimientoPendiente(idTemporal, animal)
             Result.success(true)
         } catch (e: CancellationException) {
@@ -62,7 +65,8 @@ class AnimalRepository(
 
     suspend fun updateAnimal(animal: Animal): Boolean {
         return try {
-            animalDao.actualizar(animal)
+            validarAnimal(animal)
+            animalDao.actualizarValidado(animal)
             true
         } catch (e: Exception) {
             false
@@ -95,7 +99,7 @@ class AnimalRepository(
                 fechaProbableParto = calendar.timeInMillis,
                 notas = notas
             )
-            embarazoDao.registrarEmbarazo(embarazo)
+            embarazoDao.registrarValidado(embarazo)
             Result.success(true)
         } catch (e: Exception) {
             Result.failure(e)
@@ -105,4 +109,19 @@ class AnimalRepository(
     suspend fun getEmbarazoActivo(vacaId: String): Embarazo? = embarazoDao.getEmbarazoActivoPorVaca(vacaId)
 
     fun getHistorialEmbarazos(vacaId: String): Flow<List<Embarazo>> = embarazoDao.getHistorialEmbarazos(vacaId)
+
+    suspend fun actualizarSeguro(animal: Animal) {
+        validarAnimal(animal)
+        animalDao.actualizarValidado(animal)
+    }
+
+    suspend fun cerrarGestacion(id: String, estado: String) {
+        require(estado in listOf("Finalizado", "Interrumpido")) { "Estado de gestación inválido" }
+        require(embarazoDao.cerrarActivos(id, estado) > 0) { "No hay una gestación activa" }
+    }
+
+    private fun validarAnimal(animal: Animal) {
+        val errores = Validaciones.erroresAnimal(animal.idArete, animal.peso.toString(), Validaciones.fechaTexto(animal.fechaNacimiento))
+        require(errores.isEmpty()) { errores.values.first() }
+    }
 }

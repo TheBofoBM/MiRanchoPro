@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.equipo.miranchopro.data.model.Animal
 import com.equipo.miranchopro.data.model.Lote
 import com.equipo.miranchopro.viewmodel.LotesViewModel
+import com.equipo.miranchopro.interfaz.componentes.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,9 +44,10 @@ fun PantallaDetalleLote(
     var mostrarDialogoMover by remember { mutableStateOf(false) }
     var mostrarDialogoEditar by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FA))) {
+    LaunchedEffect(mostrarDialogoEditar,mostrarDialogoMover,mostrarDialogoEliminar){viewModel.limpiarError()}
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Surface(
-            color = Color.Black,
+            color = Color(0xFF004D40),
             shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -78,7 +80,7 @@ fun PantallaDetalleLote(
                         )
                     }
                 }
-                
+
                 Row {
                     IconButton(onClick = { mostrarDialogoEditar = true }) {
                         Icon(Icons.Default.Edit, "Editar", tint = Color.White)
@@ -106,9 +108,9 @@ fun PantallaDetalleLote(
             item {
                 Text(
                     text = "ANIMALES ASIGNADOS (${animalesEnLote.size})",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 1.5.sp
                 )
             }
@@ -116,7 +118,7 @@ fun PantallaDetalleLote(
             if (animalesEnLote.isEmpty()) {
                 item {
                     Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay animales en este lote", color = Color.Gray)
+                        Text("No hay animales en este lote", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
@@ -127,10 +129,38 @@ fun PantallaDetalleLote(
         }
     }
 
+    MensajeFormulario(viewModel.errorOperacion)
     if (mostrarDialogoEliminar) {
-        DialogoEliminarLote(lote, estaVacio, { viewModel.eliminarLote(lote) { exitoso, _ -> if (exitoso) onVolver() } }, { mostrarDialogoEliminar = false })
+        DialogoEliminarLote(lote, estaVacio, viewModel.errorOperacion, viewModel.guardando, { viewModel.eliminarLote(lote) { exitoso, _ -> if (exitoso) onVolver() } }, { mostrarDialogoEliminar = false })
     }
-    // ... resto de los diálogos (Mover y Editar) se mantienen igual en lógica
+    if(mostrarDialogoEditar) {
+        var nombre by remember(lote.id) { mutableStateOf(lote.nombre) }
+        var capacidad by remember(lote.id) { mutableStateOf(lote.capacidadMaxima.toString()) }
+        var intento by remember { mutableStateOf(false) }
+        FormularioDialogo("Editar lote",{mostrarDialogoEditar=false},viewModel.guardando,viewModel.errorOperacion) {
+            CampoFormulario("Nombre *",nombre,{nombre=it},if(intento && nombre.isBlank()) "Ingresa el nombre" else null)
+            CampoFormulario("Capacidad *",capacidad,{capacidad=it},if(intento && capacidad.toIntOrNull()?.let{it>0}!=true) "Ingresa un entero mayor que cero" else null,teclado=androidx.compose.ui.text.input.KeyboardType.Number)
+            Button(onClick={intento=true
+                val numero=capacidad.toIntOrNull()
+                if(nombre.isNotBlank() && numero!=null && numero>0) viewModel.actualizarLote(lote.copy(nombre=nombre,capacidadMaxima=numero)){mostrarDialogoEditar=false}
+            },enabled=!viewModel.guardando){Text("Guardar cambios")}
+        }
+    }
+    if(mostrarDialogoMover) {
+        var destinoId by remember { mutableStateOf<Int?>(null) }
+        val opciones=todosLosLotes.filter{it.id!=lote.id}
+        FormularioDialogo("Mover animales",{mostrarDialogoMover=false},viewModel.guardando,viewModel.errorOperacion) {
+            Text("Se moverán los ${animalesEnLote.size} animales activos de ${lote.nombre}.")
+            if(opciones.isEmpty()) Text("Crea otro lote para poder realizar un traslado.")
+            opciones.forEach{ destino ->
+                Row(verticalAlignment=Alignment.CenterVertically){
+                    RadioButton(selected=destinoId==destino.id,onClick={destinoId=destino.id})
+                    Text("${destino.nombre}: ${destino.capacidadMaxima-destino.ocupacionActual} lugares disponibles")
+                }
+            }
+            Button(onClick={opciones.find{it.id==destinoId}?.let{viewModel.moverGanado(lote,it){mostrarDialogoMover=false}}},enabled=!viewModel.guardando && destinoId!=null && animalesEnLote.isNotEmpty()){Text("Confirmar traslado")}
+        }
+    }
 }
 
 @Composable
@@ -138,15 +168,15 @@ private fun TarjetaCapacidad(lote: Lote, progreso: Float, colorIndicador: Color)
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("OCUPACIÓN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                Text("OCUPACIÓN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text("${lote.ocupacionActual}", fontSize = 36.sp, fontWeight = FontWeight.Black, color = colorIndicador)
-                    Text(" / ${lote.capacidadMaxima}", fontSize = 18.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 6.dp))
+                    Text(" / ${lote.capacidadMaxima}", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
                 }
             }
             Box(Modifier.size(70.dp), contentAlignment = Alignment.Center) {
@@ -172,7 +202,7 @@ private fun TarjetaAcciones(estaVacio: Boolean, onMover: () -> Unit, onEliminar:
 
 @Composable
 private fun TarjetaAnimalCompacta(animal: Animal, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }, shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
+    Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }, shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(color = Color(0xFFF1F3F4), shape = RoundedCornerShape(8.dp), modifier = Modifier.size(40.dp)) {
                 Box(contentAlignment = Alignment.Center) { Text("🐄") }
@@ -180,7 +210,7 @@ private fun TarjetaAnimalCompacta(animal: Animal, onClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(animal.idArete, fontWeight = FontWeight.Bold)
-                Text(animal.raza, fontSize = 12.sp, color = Color.Gray)
+                Text(animal.raza, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text("${animal.peso} kg", fontWeight = FontWeight.Black, color = Color(0xFF008577))
         }
@@ -188,12 +218,12 @@ private fun TarjetaAnimalCompacta(animal: Animal, onClick: () -> Unit) {
 }
 
 @Composable
-private fun DialogoEliminarLote(lote: Lote, estaVacio: Boolean, onConfirmar: () -> Unit, onDismiss: () -> Unit) {
+private fun DialogoEliminarLote(lote: Lote, estaVacio: Boolean, error: String?, guardando: Boolean, onConfirmar: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if(estaVacio) "¿Eliminar lote?" else "No se puede eliminar") },
-        text = { Text(if(estaVacio) "¿Estás seguro de eliminar ${lote.nombre}?" else "El lote debe estar vacío para eliminarlo.") },
-        confirmButton = { if(estaVacio) TextButton(onClick = onConfirmar) { Text("Eliminar", color = Color.Red) } else TextButton(onClick = onDismiss) { Text("OK") } },
+        text = { Text(error ?: if(estaVacio) "¿Estás seguro de eliminar ${lote.nombre}?" else "El lote debe estar vacío para eliminarlo.") },
+        confirmButton = { if(estaVacio) TextButton(onClick = onConfirmar, enabled = !guardando) { Text("Eliminar", color = Color.Red) } else TextButton(onClick = onDismiss) { Text("OK") } },
         dismissButton = { if(estaVacio) TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }

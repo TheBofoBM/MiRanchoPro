@@ -16,7 +16,7 @@ data class Animal(
     val origen: String = "De parto", // "Comprada" o "De parto"
     val color: String = "No especificado",
     val marcas: String = "",
-    val ubicacion: String = "Lote A",
+    val ubicacion: String = "Sin Lote",
     val estado: String = "Sano", // "Sano", "Baja", "Pendiente"
     val fechaRegistro: Long = System.currentTimeMillis(),
     val fechaNacimiento: Long? = null, // Fecha real de nacimiento del animal

@@ -25,7 +25,7 @@ import com.equipo.miranchopro.data.model.Tarea
 import com.equipo.miranchopro.data.model.Usuario
 import com.equipo.miranchopro.modelovista.TareasViewModel
 import com.equipo.miranchopro.viewmodel.TrabajadoresViewModel
-import com.equipo.miranchopro.interfaz.componentes.DialogoAsignarTarea
+import com.equipo.miranchopro.interfaz.componentes.*
 import com.equipo.miranchopro.interfaz.componentes.TarjetaTarea
 import com.equipo.miranchopro.interfaz.navegacion.Pantalla
 
@@ -56,10 +56,15 @@ fun PantallaTareas(
         }
     }
 
+    LaunchedEffect(mostrarDialogo) { tareasViewModel.limpiarError() }
+    LaunchedEffect(tareasViewModel.versionGuardado) { if(tareasViewModel.versionGuardado>0){mostrarDialogo=false;tareaAEditar=null} }
+    var tareaAEliminar by remember { mutableStateOf<Tarea?>(null) }
+    tareaAEliminar?.let { tarea -> ConfirmarEliminacion(tarea.titulo,{tareaAEliminar=null},{tareasViewModel.eliminarTarea(tarea);tareaAEliminar=null}) }
     if (mostrarDialogo) {
         DialogoAsignarTarea(
             tareaExistente = tareaAEditar,
-            listaTrabajadores = listaTrabajadores.map { it.correo },
+            listaTrabajadores = listaTrabajadores.map { it.correo } + listOfNotNull(usuarioActual?.correo),
+            guardando=tareasViewModel.guardando,errorOperacion=tareasViewModel.errorOperacion,
             onDismiss = {
                 mostrarDialogo = false
                 tareaAEditar = null
@@ -70,20 +75,19 @@ fun PantallaTareas(
                 } else {
                     tareasViewModel.agregarTarea(nuevaTarea)
                 }
-                mostrarDialogo = false
-                tareaAEditar = null
             }
         )
     }
 
     Scaffold(
+        snackbarHost={ MensajeFormulario(tareasViewModel.errorOperacion) },
         floatingActionButton = {
             // Solo Administradores pueden crear tareas
-            if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") {
+            if (usuarioActual?.rol?.equals("Administrador", true) == true) {
                 FloatingActionButton(
-                    onClick = { 
+                    onClick = {
                         tareaAEditar = null
-                        mostrarDialogo = true 
+                        mostrarDialogo = true
                     },
                     containerColor = Color(0xFF008577),
                     contentColor = Color.White,
@@ -94,9 +98,10 @@ fun PantallaTareas(
         }
     ) { padding ->
         // Clasificación de tareas
-        val hoy = listaTareas.filter { it.fecha.isNullOrEmpty() }
-        val proximas = listaTareas.filter { !it.fecha.isNullOrEmpty() }
-        
+        val finHoy = com.equipo.miranchopro.utils.Validaciones.finDeHoy()
+        val hoy = listaTareas.filter { it.fecha.isNullOrEmpty() || (com.equipo.miranchopro.utils.Validaciones.fecha(it.fecha ?: "") ?: Long.MAX_VALUE) <= finHoy }
+        val proximas = listaTareas.filter { it !in hoy }
+
         // Conteos actualizados correctamente basándose en la lista filtrada y estado de DB
         val totalCount = listaTareas.size
         val hechasCount = listaTareas.count { it.estaHecha }
@@ -105,11 +110,11 @@ fun PantallaTareas(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(bottom = padding.calculateBottomPadding())
         ) {
             Surface(
-                color = Color.Black,
+                color = Color(0xFF004D40),
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -130,7 +135,7 @@ fun PantallaTareas(
                             letterSpacing = (-1).sp
                         )
                         Text(
-                            text = if (usuarioActual?.rol?.uppercase() == "TRABAJADOR") "Tus asignaciones" else "${hoy.size} asignadas para hoy",
+                            text = if (usuarioActual?.rol?.uppercase() == "TRABAJADOR") "Tus asignaciones" else "${hoy.size} para hoy o atrasadas",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF00BFA5)
@@ -147,7 +152,7 @@ fun PantallaTareas(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Perfil") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Perfil.ruta)
                                 },
@@ -155,7 +160,7 @@ fun PantallaTareas(
                             )
                             DropdownMenuItem(
                                 text = { Text("Clima Detallado") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.ClimaDetallado.ruta)
                                 },
@@ -163,7 +168,7 @@ fun PantallaTareas(
                             )
                             DropdownMenuItem(
                                 text = { Text("Configuración") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Configuracion.ruta)
                                 },
@@ -172,7 +177,7 @@ fun PantallaTareas(
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Cerrar sesión") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Login.ruta) {
                                         popUpTo(0)
@@ -205,13 +210,13 @@ fun PantallaTareas(
                         TarjetaTarea(
                             tarea = tarea,
                             onTareaClick = { seleccionada ->
-                                if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") {
+                                if (usuarioActual?.rol?.equals("Administrador", true) == true) {
                                     tareaAEditar = seleccionada
                                     mostrarDialogo = true
                                 }
                             },
                             onToggleCompletada = { tareasViewModel.toggleTareaCompletada(tarea) },
-                            onEliminar = if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") ({ tareasViewModel.eliminarTarea(tarea) }) else null
+                            onEliminar = if (usuarioActual?.rol?.equals("Administrador", true) == true) ({ tareaAEliminar=tarea }) else null
                         )
                     }
                 }
@@ -222,13 +227,13 @@ fun PantallaTareas(
                         TarjetaTarea(
                             tarea = tarea,
                             onTareaClick = { seleccionada ->
-                                if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") {
+                                if (usuarioActual?.rol?.equals("Administrador", true) == true) {
                                     tareaAEditar = seleccionada
                                     mostrarDialogo = true
                                 }
                             },
                             onToggleCompletada = { tareasViewModel.toggleTareaCompletada(tarea) },
-                            onEliminar = if (usuarioActual?.rol?.uppercase() != "TRABAJADOR") ({ tareasViewModel.eliminarTarea(tarea) }) else null
+                            onEliminar = if (usuarioActual?.rol?.equals("Administrador", true) == true) ({ tareaAEliminar=tarea }) else null
                         )
                     }
                 }
@@ -239,7 +244,7 @@ fun PantallaTareas(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 64.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("No hay tareas asignadas", color = Color.Gray)
+                            Text("No hay tareas asignadas", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -252,13 +257,13 @@ fun PantallaTareas(
 fun CajaResumen(numero: String, etiqueta: String, modifier: Modifier, colorNumero: Color = Color.Black) {
     Card(
         modifier = modifier.padding(4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(numero, style = MaterialTheme.typography.headlineMedium, color = colorNumero, fontWeight = FontWeight.Bold)
-            Text(etiqueta, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Text(etiqueta, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

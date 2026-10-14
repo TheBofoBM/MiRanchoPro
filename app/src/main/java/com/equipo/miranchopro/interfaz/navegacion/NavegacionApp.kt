@@ -1,6 +1,14 @@
 package com.equipo.miranchopro.interfaz.navegacion
 
 import android.content.Context
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import com.equipo.miranchopro.interfaz.pantallas.mas.PantallaMas
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.widget.Toast
@@ -67,15 +75,16 @@ sealed class Pantalla(val ruta: String) {
         fun crearRuta(tipo: String? = null, idTemp: String? = null): String {
             var r = "registrar_animal"
             val params = mutableListOf<String>()
-            if (tipo != null) params.add("tipo=$tipo")
-            if (idTemp != null) params.add("idTemp=$idTemp")
+            if (tipo != null) params.add("tipo=${Uri.encode(tipo)}")
+            if (idTemp != null) params.add("idTemp=${Uri.encode(idTemp)}")
             if (params.isNotEmpty()) r += "?" + params.joinToString("&")
             return r
         }
     }
     object EditarAnimal : Pantalla("editar_animal/{idArete}") {
-        fun crearRuta(idArete: String) = "editar_animal/$idArete"
+        fun crearRuta(idArete: String) = "editar_animal/${Uri.encode(idArete)}"
     }
+    object Mas : Pantalla("mas")
     object Inicio : Pantalla("inicio")
     object Salud : Pantalla("salud")
     object Lotes : Pantalla("lotes")
@@ -100,9 +109,10 @@ sealed class ItemNavegacion(
 ) {
     object Inicio : ItemNavegacion(Pantalla.Inicio.ruta, "Inicio", Icons.Outlined.Home, Icons.Filled.Home)
     object Ganado : ItemNavegacion(Pantalla.Inventario.ruta, "Ganado", Icons.Outlined.Agriculture, Icons.Filled.Agriculture)
-    object Medico : ItemNavegacion(Pantalla.Salud.ruta, "Médico", Icons.Outlined.MedicalServices, Icons.Filled.MedicalServices)
+    object Medico : ItemNavegacion(Pantalla.Salud.ruta, "Salud", Icons.Outlined.MedicalServices, Icons.Filled.MedicalServices)
     object Tareas : ItemNavegacion(Pantalla.Tareas.ruta, "Tareas", Icons.AutoMirrored.Outlined.ListAlt, Icons.AutoMirrored.Filled.ListAlt)
     object Reportes : ItemNavegacion(Pantalla.Reportes.ruta, "Reportes", Icons.Outlined.Assessment, Icons.Filled.Assessment)
+    object Mas : ItemNavegacion(Pantalla.Mas.ruta, "Más", Icons.Outlined.MoreHoriz, Icons.Filled.MoreHoriz)
     object Equipo : ItemNavegacion(Pantalla.Trabajadores.ruta, "Equipo", Icons.Outlined.People, Icons.Filled.People)
 }
 
@@ -111,14 +121,27 @@ fun NavegacionApp() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     val database = remember { RanchoDatabase.getDatabase(context) }
     val repoAnimales = remember { AnimalRepository(database.animalDao(), database.embarazoDao()) }
     val repoLotes = remember { LoteRepository(database.loteDao()) }
-    val repoSalud = remember { SaludRepository(database.medicamentoDao(), database.vacunacionDao(), database.enfermedadDao()) }
+    val repoSalud = remember { SaludRepository(database.medicamentoDao(), database.vacunacionDao(), database.enfermedadDao(), database.animalDao()) }
     val repoTareas = remember { TareaRepository(database.tareaDao()) }
 
-    var usuarioActual by remember { mutableStateOf<Usuario?>(null) }
+    val sesion: SesionViewModel = viewModel { SesionViewModel(context, database.usuarioDao()) }
+    val usuarioActual by sesion.usuario.collectAsState()
+    val cargandoSesion by sesion.cargando.collectAsState()
+    if(cargandoSesion) { Box(Modifier.fillMaxSize(), contentAlignment=Alignment.Center){CircularProgressIndicator()};return }
+    val errorSesion by sesion.error.collectAsState()
+    if(errorSesion!=null) {
+        Column(Modifier.fillMaxSize().padding(24.dp),horizontalAlignment=Alignment.CenterHorizontally){
+            Text(errorSesion!!);Spacer(Modifier.height(16.dp));Button(onClick={sesion.restaurar()}){Text("Reintentar")}
+        }
+        return
+    }
+    var mostrarRecuperacion by remember { mutableStateOf(false) }
+    if(mostrarRecuperacion) AlertDialog(onDismissRequest={mostrarRecuperacion=false},title={Text("Recuperar acceso")},text={Text("Si eres empleado, pide al dueño que cambie tu contraseña desde Equipo. La recuperación por correo del dueño estará disponible cuando se active la cuenta en línea.")},confirmButton={TextButton(onClick={mostrarRecuperacion=false}){Text("Entendido")}})
+
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -127,14 +150,14 @@ fun NavegacionApp() {
 
     val sensorManager = remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
     val accelerometer = remember { sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) }
-    
-    val shakeDetector = remember { 
-        ShakeDetector { 
+
+    val shakeDetector = remember {
+        ShakeDetector {
             val rutaActual = navController.currentDestination?.route
             if (rutaActual != null && rutaActual != Pantalla.Login.ruta && rutaActual != Pantalla.Registro.ruta) {
-                mostrarShakeOverlay = true 
+                mostrarShakeOverlay = true
             }
-        } 
+        }
     }
 
     DisposableEffect(accelerometer) {
@@ -145,15 +168,22 @@ fun NavegacionApp() {
     }
 
     val pantallasSinBarra = listOf(Pantalla.Login.ruta, Pantalla.Registro.ruta)
-    val mostrarBarra = currentDestination?.route !in pantallasSinBarra
+    val mostrarBarra = usuarioActual!=null && currentDestination?.route !in (pantallasSinBarra + listOf(Pantalla.RegistrarAnimal.ruta,Pantalla.EditarAnimal.ruta,Pantalla.RegistrarLote.ruta))
+    LaunchedEffect(currentDestination?.route, usuarioActual?.correo) {
+        val ruta=currentDestination?.route
+        if(ruta==Pantalla.Login.ruta && usuarioActual!=null) sesion.salir()
+        if(ruta!=null && ruta !in pantallasSinBarra && usuarioActual==null) navController.navigate(Pantalla.Login.ruta){popUpTo(0){inclusive=true}}
+        if(ruta in listOf(Pantalla.Trabajadores.ruta,Pantalla.Lotes.ruta,Pantalla.DetalleLote.ruta,Pantalla.RegistrarLote.ruta,Pantalla.Reportes.ruta) && usuarioActual?.rol?.equals("Administrador",true)!=true)
+            navController.navigate(Pantalla.Inicio.ruta){popUpTo(Pantalla.Inicio.ruta)}
+    }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF004D40)).statusBarsPadding()) {
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
                 if (mostrarBarra) {
                     NavigationBar(
-                        containerColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surface,
                         tonalElevation = 8.dp
                     ) {
                         val items = listOf(
@@ -161,11 +191,10 @@ fun NavegacionApp() {
                             ItemNavegacion.Ganado,
                             ItemNavegacion.Medico,
                             ItemNavegacion.Tareas,
-                            ItemNavegacion.Reportes,
-                            ItemNavegacion.Equipo
+                            ItemNavegacion.Mas
                         )
                         items.forEach { item ->
-                            val esSeleccionado = currentDestination?.hierarchy?.any { it.route == item.ruta } == true
+                            val esSeleccionado = currentDestination?.hierarchy?.any { it.route == item.ruta } == true || (item==ItemNavegacion.Mas && currentDestination?.route in listOf(Pantalla.Reportes.ruta,Pantalla.Trabajadores.ruta,Pantalla.Lotes.ruta,Pantalla.Insumos.ruta,Pantalla.Perfil.ruta,Pantalla.Configuracion.ruta))
 
                             NavigationBarItem(
                                 icon = {
@@ -174,7 +203,7 @@ fun NavegacionApp() {
                                         contentDescription = item.titulo
                                     )
                                 },
-                                label = { Text(item.titulo, fontSize = 10.sp) },
+                                label = { Text(item.titulo, fontSize = 12.sp) },
                                 selected = esSeleccionado,
                                 onClick = {
                                     navController.navigate(item.ruta) {
@@ -198,71 +227,72 @@ fun NavegacionApp() {
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = Pantalla.Login.ruta,
+                startDestination = if(usuarioActual==null) Pantalla.Login.ruta else Pantalla.Inicio.ruta,
                 modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
             ) {
                 composable(Pantalla.Login.ruta) {
                     val loginViewModel: LoginViewModel = viewModel { LoginViewModel(database.usuarioDao()) }
                     LoginScreen(
                         onLoginExitoso = { user ->
-                            usuarioActual = user
+                            sesion.entrar(user)
                             navController.navigate(Pantalla.Inicio.ruta) { popUpTo(Pantalla.Login.ruta) { inclusive = true } }
-                        }, 
+                        },
                         onRegisterClick = { navController.navigate(Pantalla.Registro.ruta) },
-                        onForgotPassword = { /* Implementar recuperación */ },
+                        onForgotPassword = { mostrarRecuperacion = true },
                         viewModel = loginViewModel
                     )
                 }
-                
+
                 composable(Pantalla.Registro.ruta) {
                     val registroViewModel: RegistroViewModel = viewModel { RegistroViewModel(database.usuarioDao()) }
                     RegistroScreen(viewModel = registroViewModel, onRegistroExitoso = {
+                        registroViewModel.usuarioRegistrado?.let { sesion.entrar(it) }
                         navController.navigate(Pantalla.Inicio.ruta) { popUpTo(Pantalla.Login.ruta) { inclusive = true } }
                     }, onIrALogin = { navController.popBackStack() } )
                 }
-                
+
                 composable(Pantalla.Inicio.ruta) {
                     val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
                     val saludViewModel: SaludViewModel = viewModel { SaludViewModel(repoSalud) }
-                    val tarViewModel: TareasViewModel = viewModel { TareasViewModel(repoTareas) }
+                    val tarViewModel: TareasViewModel = viewModel { TareasViewModel(repoTareas, database.usuarioDao(), {sesion.usuario.value}) }
                     val climaViewModel: ClimaViewModel = viewModel()
                     PantallaInicio(
-                        navController = navController, 
-                        inventarioViewModel = invViewModel, 
+                        navController = navController,
+                        inventarioViewModel = invViewModel,
                         saludViewModel = saludViewModel,
                         usuarioActual = usuarioActual,
                         tareasViewModel = tarViewModel,
                         climaViewModel = climaViewModel
                     )
                 }
-                
+
                 composable(Pantalla.Tareas.ruta) {
-                    val tareasViewModel: TareasViewModel = viewModel { TareasViewModel(repoTareas) }
-                    val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao()) }
+                    val tareasViewModel: TareasViewModel = viewModel { TareasViewModel(repoTareas, database.usuarioDao(), {sesion.usuario.value}) }
+                    val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao(), { sesion.usuario.value?.rol?.equals("Administrador",true)==true }, {sesion.usuario.value?.correo ?: ""}) }
                     PantallaTareas(
-                        navController = navController, 
-                        tareasViewModel = tareasViewModel, 
+                        navController = navController,
+                        tareasViewModel = tareasViewModel,
                         trabajadoresViewModel = trabViewModel,
                         usuarioActual = usuarioActual
                     )
                 }
-                
+
                 composable(Pantalla.Salud.ruta) {
                     val saludViewModel: SaludViewModel = viewModel { SaludViewModel(repoSalud) }
                     PantallaSalud(navController = navController, viewModel = saludViewModel)
                 }
-                
+
                 composable(Pantalla.Reportes.ruta) {
                     val useCase = GenerarReporteUseCase(repoAnimales)
                     val reporteViewModel: ReporteViewModel = viewModel { ReporteViewModel(useCase) }
                     PantallaReportes(navController = navController, viewModel = reporteViewModel)
                 }
-                
+
                 composable(Pantalla.Trabajadores.ruta) {
-                    val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao()) }
+                    val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao(), { sesion.usuario.value?.rol?.equals("Administrador",true)==true }, {sesion.usuario.value?.correo ?: ""}) }
                     PantallaTrabajadores(navController = navController, viewModel = trabViewModel)
                 }
-                
+
                 composable(Pantalla.Insumos.ruta) {
                     val insumoViewModel: InsumoViewModel = viewModel { InsumoViewModel(database.insumoDao()) }
                     PantallaInsumos(navController = navController, viewModel = insumoViewModel)
@@ -275,15 +305,15 @@ fun NavegacionApp() {
 
                 composable(Pantalla.Inventario.ruta) {
                     val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
-                    PantallaInventario(navController = navController, viewModel = invViewModel, alSeleccionarAnimal = { id -> 
+                    PantallaInventario(navController = navController, viewModel = invViewModel, alSeleccionarAnimal = { id ->
                         val animal = invViewModel.listaAnimales.find { it.idArete == id }
                         if (animal?.estado == "Pendiente") navController.navigate(Pantalla.RegistrarAnimal.crearRuta(idTemp = id))
                         else navController.navigate(Pantalla.EditarAnimal.crearRuta(id))
                     }, alAgregarAnimal = { tipo -> navController.navigate(Pantalla.RegistrarAnimal.crearRuta(tipo)) })
                 }
-                
+
                 composable(Pantalla.Lotes.ruta) {
-                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
+                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes, { sesion.usuario.value?.rol?.equals("Administrador",true)==true }) }
                     PantallaLotes(
                         navController = navController,
                         viewModel = lotesViewModel,
@@ -291,23 +321,23 @@ fun NavegacionApp() {
                         onVerDetalle = { idLote -> navController.navigate(Pantalla.DetalleLote.crearRuta(idLote)) }
                     )
                 }
-                
+
                 composable(Pantalla.RegistrarLote.ruta) {
-                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
+                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes, { sesion.usuario.value?.rol?.equals("Administrador",true)==true }) }
                     PantallaRegistrarLote(viewModel = lotesViewModel, onVolver = { navController.popBackStack() })
                 }
-                
+
                 composable(
                     route = Pantalla.DetalleLote.ruta,
                     arguments = listOf(navArgument("idLote") { type = NavType.IntType })
                 ) { backStackEntry ->
                     val idLote = backStackEntry.arguments?.getInt("idLote") ?: 0
-                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes) }
+                    val lotesViewModel: LotesViewModel = viewModel { LotesViewModel(repoLotes, { sesion.usuario.value?.rol?.equals("Administrador",true)==true }) }
                     val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
                     val lotesState by lotesViewModel.lotes.collectAsState()
                     val lote = lotesState.find { it.id == idLote }
-                    val animales = invViewModel.listaAnimales.filter { it.ubicacion == lote?.nombre }
-                    
+                    val animales = invViewModel.listaAnimales.filter { it.ubicacion == lote?.nombre && it.estado !in listOf("Baja","Pendiente") }
+
                     if (lote != null) {
                         PantallaDetalleLote(
                             lote = lote,
@@ -319,32 +349,33 @@ fun NavegacionApp() {
                         )
                     }
                 }
-                
+
+                composable(Pantalla.Mas.ruta) { PantallaMas(navController, usuarioActual) }
                 composable(Pantalla.Perfil.ruta) {
-                    PantallaPerfil(navController = navController)
+                    PantallaPerfil(navController = navController, usuario = usuarioActual)
                 }
-                
+
                 composable(Pantalla.Configuracion.ruta) {
                     PantallaConfiguracion(navController = navController)
                 }
-                
+
                 composable(
-                    route = Pantalla.RegistrarAnimal.ruta, 
+                    route = Pantalla.RegistrarAnimal.ruta,
                     arguments = listOf(
-                        navArgument("tipo") { type = NavType.StringType; nullable = true }, 
+                        navArgument("tipo") { type = NavType.StringType; nullable = true },
                         navArgument("idTemp") { type = NavType.StringType; nullable = true }
                     )
                 ) { entrada ->
                     val regViewModel: RegistrarAnimalViewModel = viewModel { RegistrarAnimalViewModel(repoAnimales, repoLotes) }
                     LaunchedEffect(entrada.arguments) {
-                        entrada.arguments?.getString("idTemp")?.let { regViewModel.cargarParaCompletar(it) } 
+                        entrada.arguments?.getString("idTemp")?.let { regViewModel.cargarParaCompletar(it) }
                             ?: entrada.arguments?.getString("tipo")?.let { regViewModel.tipo = it ?: "Becerro" }
                     }
                     PantallaRegistrarAnimal(viewModel = regViewModel, alFinalizar = { navController.popBackStack() })
                 }
 
                 composable(
-                    route = Pantalla.EditarAnimal.ruta, 
+                    route = Pantalla.EditarAnimal.ruta,
                     arguments = listOf(navArgument("idArete") { type = NavType.StringType })
                 ) { entrada ->
                     val idArete = entrada.arguments?.getString("idArete") ?: ""

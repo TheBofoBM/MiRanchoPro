@@ -30,7 +30,7 @@ fun TarjetaTarea(
             .fillMaxWidth()
             .padding(vertical = 6.dp)
             .then(if (onEliminar != null) Modifier.clickable { onTareaClick(tarea) } else Modifier),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -61,7 +61,7 @@ fun TarjetaTarea(
                 Text(
                     text = tarea.descripcion,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -82,13 +82,13 @@ fun TarjetaTarea(
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }
-                
+
                 if (onEliminar != null) {
                     IconButton(onClick = onEliminar) {
                         Icon(
-                            imageVector = Icons.Default.Delete, 
-                            contentDescription = "Eliminar", 
-                            tint = Color.LightGray.copy(alpha = 0.6f), 
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Eliminar",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             modifier = Modifier.size(20.dp)
                         )
                     }

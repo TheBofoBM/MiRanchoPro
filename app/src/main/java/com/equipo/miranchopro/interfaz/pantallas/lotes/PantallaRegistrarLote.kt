@@ -26,14 +26,14 @@ import com.equipo.miranchopro.viewmodel.LotesViewModel
 
 // ─── Colores consistentes con el resto de la app ─────────────────────────────
 
-private val ColorBackground  = Color(0xFFFFFFFF)
-private val ColorText        = Color(0xFF2C3E50)
-private val ColorPrimary     = Color(0xFF0E8A5A)
-private val ColorSubtext     = Color(0xFF95A5A6)
-private val ColorLabel       = Color(0xFF7F8C8D)
-private val ColorFieldBorder = Color(0xFFE0E0E0)
-private val ColorInputBg     = Color(0xFFF8F9FA)
-private val ColorPlaceholder = Color(0xFFBDC3C7)
+private val ColorBackground: Color @Composable get() = MaterialTheme.colorScheme.background
+private val ColorText: Color @Composable get() = MaterialTheme.colorScheme.onSurface
+private val ColorPrimary: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val ColorSubtext: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val ColorLabel: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val ColorFieldBorder: Color @Composable get() = MaterialTheme.colorScheme.outline
+private val ColorInputBg: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val ColorPlaceholder: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 private val ColorBadgeBg     = Color(0xFFE8F5E9)
 private val ColorError       = Color(0xFFD32F2F)
 private val ColorErrorBg     = Color(0xFFFDECEC)
@@ -113,7 +113,7 @@ fun PantallaRegistrarLote(
                         )
                         Text(
                             text = "Define el nombre y capacidad del nuevo lote",
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             color = ColorLabel
                         )
                     }
@@ -148,7 +148,7 @@ fun PantallaRegistrarLote(
             )
 
             // Mensaje de error
-            if (mensajeError.isNotEmpty()) {
+            if (mensajeError.isNotEmpty() || viewModel.errorOperacion != null) {
                 Spacer(modifier = Modifier.height(14.dp))
                 Box(
                     modifier = Modifier
@@ -158,7 +158,7 @@ fun PantallaRegistrarLote(
                         .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
                     Text(
-                        text = mensajeError,
+                        text = viewModel.errorOperacion ?: mensajeError,
                         color = ColorError,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
@@ -170,6 +170,7 @@ fun PantallaRegistrarLote(
 
             // Botón guardar
             Button(
+                enabled = !viewModel.guardando,
                 onClick = {
                     val capacidad = capacidadStr.toIntOrNull()
                     if (nombre.isBlank() || capacidad == null || capacidad <= 0) {
@@ -180,8 +181,7 @@ fun PantallaRegistrarLote(
                             capacidadMaxima = capacidad,
                             ocupacionActual = 0
                         )
-                        viewModel.guardarNuevoLote(nuevoLote)
-                        onVolver()
+                        viewModel.guardarNuevoLote(nuevoLote, onVolver)
                     }
                 },
                 modifier = Modifier
@@ -232,7 +232,7 @@ private fun LoteInputField(
     Column {
         Text(
             text = label,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = ColorLabel,
             letterSpacing = 1.5.sp,

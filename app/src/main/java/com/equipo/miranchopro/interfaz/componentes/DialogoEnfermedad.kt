@@ -1,111 +1,36 @@
 package com.equipo.miranchopro.interfaz.componentes
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import com.equipo.miranchopro.data.model.Enfermedad
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.equipo.miranchopro.utils.Validaciones
+import com.equipo.miranchopro.data.model.*
 
 @Composable
-fun DialogoEnfermedad(
-    onDismiss: () -> Unit,
-    onConfirm: (Enfermedad) -> Unit
-) {
-    var nombre by remember { mutableStateOf("") }
-    var sintomas by remember { mutableStateOf("") }
-    var tratamiento by remember { mutableStateOf("") }
-    var idAnimal by remember { mutableStateOf("") }
-    var fechaDeteccion by remember { mutableStateOf("") }
-    var notas by remember { mutableStateOf("") }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(16.dp), color = Color.White) {
-            Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Reportar Enfermedad",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null) }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                OutlinedTextField(
-                    value = idAnimal,
-                    onValueChange = { idAnimal = it },
-                    label = { Text("ID Animal (Arete)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    label = { Text("Nombre de la enfermedad") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = sintomas,
-                    onValueChange = { sintomas = it },
-                    label = { Text("Síntomas observados") },
-                    modifier = Modifier.fillMaxWidth().height(80.dp)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = tratamiento,
-                    onValueChange = { tratamiento = it },
-                    label = { Text("Tratamiento inicial") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = fechaDeteccion,
-                    onValueChange = { fechaDeteccion = it },
-                    label = { Text("Fecha de detección") },
-                    placeholder = { Text("dd/mm/aaaa") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Button(
-                    onClick = {
-                        if (nombre.isNotBlank() && idAnimal.isNotBlank()) {
-                            onConfirm(
-                                Enfermedad(
-                                    nombre = nombre,
-                                    sintomas = sintomas,
-                                    tratamiento = tratamiento,
-                                    idAnimal = idAnimal,
-                                    fechaDeteccion = fechaDeteccion,
-                                    estado = "Activo"
-                                )
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00897B)),
-                    shape = RoundedCornerShape(8.dp)
-                ) { Text("Guardar Reporte") }
-            }
-        }
+fun DialogoEnfermedad(animales: List<Animal> = emptyList(), guardando: Boolean = false, errorOperacion: String? = null,
+    onDismiss: () -> Unit, onConfirm: (Enfermedad) -> Unit) {
+    var idAnimal by rememberSaveable { mutableStateOf("") }
+    var nombre by rememberSaveable { mutableStateOf("") }
+    var detalle by rememberSaveable { mutableStateOf("") }
+    var fecha by rememberSaveable { mutableStateOf(Validaciones.fechaTexto(System.currentTimeMillis())) }
+    var notas by rememberSaveable { mutableStateOf("") }
+    var tratamiento by rememberSaveable { mutableStateOf("") }
+    var intento by rememberSaveable { mutableStateOf(false) }
+    val ids=animales.filter{it.estado !in listOf("Baja","Pendiente")}.map{it.idArete}
+    FormularioDialogo("Reportar enfermedad",onDismiss,guardando,errorOperacion) {
+        if(ids.isEmpty()) Text("Registra un animal activo antes de continuar.")
+        SelectorFormulario("Animal / arete *",idAnimal,ids,{idAnimal=it},if(intento && idAnimal !in ids) "Selecciona un animal activo" else null)
+        CampoFormulario("Enfermedad *",nombre,{nombre=it},if(intento && nombre.isBlank()) "Ingresa el nombre" else null)
+        CampoFormulario("Síntomas observados *",detalle,{detalle=it},if(intento && detalle.isBlank()) "Completa este campo" else null)
+        CampoFormulario("Fecha *",fecha,{fecha=it},if(intento) Validaciones.errorFecha(fecha,"La fecha") else null,"dd/mm/aaaa")
+        CampoFormulario("Tratamiento indicado (opcional)",tratamiento,{tratamiento=it})
+        CampoFormulario("Notas (opcional)",notas,{notas=it})
+        Button(onClick={intento=true
+            val errorProxima: String? = null; val orden=true
+            if(idAnimal in ids && nombre.isNotBlank() && detalle.isNotBlank() && Validaciones.errorFecha(fecha,"La fecha")==null && errorProxima==null && orden) onConfirm(Enfermedad(idAnimal=idAnimal,nombre=nombre.trim(),sintomas=detalle.trim(),fechaDeteccion=fecha.trim(),tratamiento=tratamiento.trim(),notas=notas.trim(),estado="Activo"))
+        },enabled=!guardando && ids.isNotEmpty(),modifier=Modifier.fillMaxWidth()){Text("Guardar")}
     }
 }

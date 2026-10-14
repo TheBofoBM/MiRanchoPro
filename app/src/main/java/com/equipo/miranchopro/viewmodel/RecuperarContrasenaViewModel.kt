@@ -25,7 +25,7 @@ class RecuperarContrasenaViewModel(private val usuarioDao: UsuarioDao) : ViewMod
     var pasoActual by mutableStateOf(PasoRecuperacion.INGRESAR_CORREO)
     var mensajeUI by mutableStateOf<String?>(null)
         private set
-    
+
     private var codigoGenerado by mutableStateOf("")
 
     fun limpiarMensaje() { mensajeUI = null }

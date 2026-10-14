@@ -9,6 +9,9 @@ interface TareaDao {
     @Query("SELECT * FROM tareas ORDER BY id DESC")
     fun obtenerTodas(): Flow<List<Tarea>>
 
+    @Query("SELECT * FROM tareas WHERE id = :id")
+    suspend fun porId(id: Int): Tarea?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarTarea(tarea: Tarea)
 

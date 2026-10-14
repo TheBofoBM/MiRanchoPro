@@ -14,7 +14,7 @@ sealed class ResultadoRegistro {
 class RegistrarUsuarioUseCase(private val usuarioDao: UsuarioDao) {
 
     suspend fun ejecutar(correo: String, contrasena: String, confirmarContrasena: String): ResultadoRegistro {
-        val correoNormalizado = correo.trim().lowercase()
+        val correoNormalizado = com.equipo.miranchopro.utils.Validaciones.correo(correo)
 
         // 1. Validación de campos vacíos
         if (correo.isBlank() || contrasena.isBlank() || confirmarContrasena.isBlank()) {
@@ -22,7 +22,7 @@ class RegistrarUsuarioUseCase(private val usuarioDao: UsuarioDao) {
         }
 
         // 2. Validación de formato (Regex básica para el test, Patterns requiere Android)
-        if (!correoNormalizado.contains("@") || !correoNormalizado.contains(".")) {
+        if (!com.equipo.miranchopro.utils.Validaciones.correoValido(correoNormalizado)) {
             return ResultadoRegistro.FormatoInvalido
         }
 
@@ -43,14 +43,14 @@ class RegistrarUsuarioUseCase(private val usuarioDao: UsuarioDao) {
             } else {
                 val nuevoUsuario = Usuario(
                     correo = correoNormalizado,
-                    contrasena = contrasena,
+                    contrasena = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { com.equipo.miranchopro.utils.Claves.proteger(contrasena) },
                     rol = "Administrador"
                 )
-                usuarioDao.registrarUsuario(nuevoUsuario)
+                usuarioDao.registrarSeguro(nuevoUsuario)
                 ResultadoRegistro.Exito
             }
         } catch (e: Exception) {
-            ResultadoRegistro.Error("Error en la base de datos")
+            ResultadoRegistro.Error(com.equipo.miranchopro.utils.Validaciones.mensaje(e, "No se pudo crear la cuenta. Inténtalo de nuevo."))
         }
     }
 }

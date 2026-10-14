@@ -18,6 +18,9 @@ interface InsumoDao {
     @Delete
     suspend fun eliminarInsumo(insumo: Insumo)
 
-    @Query("UPDATE insumos SET cantidad = cantidad - :gasto WHERE id = :idInsumo")
-    suspend fun descontarStock(idInsumo: String, gasto: Double)
+    @Query("UPDATE insumos SET cantidad = cantidad - :gasto WHERE id = :idInsumo AND :gasto > 0 AND cantidad >= :gasto")
+    suspend fun descontarStock(idInsumo: String, gasto: Double): Int
+
+    @Query("UPDATE insumos SET cantidad = cantidad + :cantidad WHERE id = :id AND :cantidad > 0 AND cantidad + :cantidad <= 1.7976931348623157E308")
+    suspend fun sumarStock(id: String, cantidad: Double): Int
 }

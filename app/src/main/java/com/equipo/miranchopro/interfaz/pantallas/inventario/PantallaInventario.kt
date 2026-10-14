@@ -82,11 +82,11 @@ fun PantallaInventario(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(bottom = relleno.calculateBottomPadding())
         ) {
             Surface(
-                color = Color.Black,
+                color = Color(0xFF004D40),
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -124,7 +124,7 @@ fun PantallaInventario(
                                 maxLines = 1
                             )
                         }
-                        
+
                         Text(
                             text = when(viewModel.vistaActual) {
                                 VistaInventario.CATEGORIAS -> "${viewModel.listaAnimales.filter { it.estado != "Baja" && it.estado != "Pendiente" }.size} registrados"
@@ -147,7 +147,7 @@ fun PantallaInventario(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Perfil") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Perfil.ruta)
                                 },
@@ -155,7 +155,7 @@ fun PantallaInventario(
                             )
                             DropdownMenuItem(
                                 text = { Text("Configuración") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Configuracion.ruta)
                                 },
@@ -164,7 +164,7 @@ fun PantallaInventario(
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Cerrar sesión") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Login.ruta) {
                                         popUpTo(0)
@@ -181,7 +181,7 @@ fun PantallaInventario(
                 when (viewModel.vistaActual) {
                     VistaInventario.CATEGORIAS -> SeccionCategorias(viewModel)
                     else -> SeccionListaAnimales(
-                        viewModel = viewModel, 
+                        viewModel = viewModel,
                         alSeleccionarAnimal = alSeleccionarAnimal,
                         alCancelarPendiente = { animalACancelar = it }
                     )
@@ -202,7 +202,7 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
             item {
                 Text(
                     text = "REGISTROS POR COMPLETAR",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFFD32F2F),
                     letterSpacing = 1.5.sp
@@ -224,13 +224,13 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
         item {
             Text(
                 text = "SECCIONES DEL RANCHO",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 1.5.sp
             )
         }
-        
+
         if (viewModel.estaCargando) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
@@ -240,12 +240,12 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
         } else {
             items(viewModel.categorias) { (nombre, cantidad) ->
                 CardCategoriaLujo(
-                    titulo = nombre, 
-                    subtitulo = "$cantidad animales", 
+                    titulo = nombre,
+                    subtitulo = "$cantidad animales",
                     onClick = { viewModel.seleccionarCategoria(nombre) }
                 )
             }
-            
+
             item {
                 Spacer(modifier = Modifier.height(12.dp))
                 CardCategoriaLujo(
@@ -263,10 +263,10 @@ fun SeccionCategorias(viewModel: InventarioViewModel) {
 
 @Composable
 fun CardCategoriaLujo(
-    titulo: String, 
-    subtitulo: String, 
+    titulo: String,
+    subtitulo: String,
     colorFondo: Color = Color.White,
-    icono: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.Folder,
+    icono: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.Pets,
     colorIcono: Color = Color(0xFF008577),
     onClick: () -> Unit
 ) {
@@ -294,10 +294,10 @@ fun CardCategoriaLujo(
             }
             Spacer(modifier = Modifier.width(20.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = titulo, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
-                Text(text = subtitulo, color = Color.Gray, fontSize = 14.sp)
+                Text(text = titulo, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = subtitulo, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -341,17 +341,17 @@ fun SeccionListaAnimales(
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            text = if (viewModel.vistaActual == VistaInventario.PENDIENTES) 
-                                "No hay nacimientos pendientes" 
-                            else "No se encontraron animales", 
-                            color = Color.Gray
+                            text = if (viewModel.vistaActual == VistaInventario.PENDIENTES)
+                                "No hay nacimientos pendientes"
+                            else "No se encontraron animales",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             } else {
                 items(animales) { animal ->
                     TarjetaAnimalLujo(
-                        animal = animal, 
+                        animal = animal,
                         onClick = { alSeleccionarAnimal(animal.idArete) },
                         onCancelar = { alCancelarPendiente(animal) }
                     )
@@ -364,7 +364,7 @@ fun SeccionListaAnimales(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TarjetaAnimalLujo(
-    animal: Animal, 
+    animal: Animal,
     onClick: () -> Unit,
     onCancelar: () -> Unit = {}
 ) {
@@ -372,53 +372,53 @@ fun TarjetaAnimalLujo(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (animal.estado == "Pendiente") "Registro Rápido" else "#${animal.idArete}", 
-                    fontWeight = FontWeight.Black, 
-                    fontSize = 20.sp, 
-                    color = Color.Black
+                    text = if (animal.estado == "Pendiente") "Registro Rápido" else "#${animal.idArete}",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 20.sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 EstadoBadgeLujo(animal.estado)
                 Spacer(modifier = Modifier.weight(1f))
-                
+
                 if (animal.estado == "Pendiente") {
                     IconButton(onClick = onCancelar) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "Cancelar registro", 
+                            contentDescription = "Cancelar registro",
                             tint = Color.Red
                         )
                     }
                 } else {
                     Icon(
-                        imageVector = Icons.Default.EditNote, 
-                        contentDescription = null, 
-                        tint = Color.LightGray
+                        imageVector = Icons.Default.EditNote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            
+
             val subtitulo = if (animal.estado == "Pendiente") {
                 "Registrado a las ${animal.horaNacimiento ?: "--:--"}"
             } else {
                 if (animal.nombre.isNotBlank()) "${animal.nombre} • ${animal.tipo}" else animal.tipo
             }
-            
+
             Text(
-                text = if (animal.estado == "Pendiente") subtitulo else "$subtitulo • ${animal.raza}", 
-                color = Color.Gray, 
-                fontSize = 16.sp, 
+                text = if (animal.estado == "Pendiente") subtitulo else "$subtitulo • ${animal.raza}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 16.sp,
                 modifier = Modifier.padding(top = 4.dp)
             )
-            
+
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color(0xFFF1F3F4))
-            
+
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 if (animal.estado == "Pendiente") {
                     Text("Toca para completar el registro con el arete y peso real", fontSize = 12.sp, color = Color(0xFF008577), fontWeight = FontWeight.Bold)
@@ -448,10 +448,10 @@ fun EstadoBadgeLujo(estado: String) {
     }
     Surface(color = colorBase, shape = RoundedCornerShape(8.dp)) {
         Text(
-            text = estado.uppercase(), 
-            color = colorTexto, 
+            text = estado.uppercase(),
+            color = colorTexto,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            fontSize = 11.sp, 
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )
     }
@@ -460,7 +460,7 @@ fun EstadoBadgeLujo(estado: String) {
 @Composable
 fun InfoItemLujo(label: String, value: String) {
     Column {
-        Text(label, fontSize = 11.sp, color = Color(0xFF9AA0A6), fontWeight = FontWeight.Bold)
+        Text(label, fontSize = 12.sp, color = Color(0xFF9AA0A6), fontWeight = FontWeight.Bold)
         Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF202124))
     }
 }

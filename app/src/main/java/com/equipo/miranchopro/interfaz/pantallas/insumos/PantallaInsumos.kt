@@ -1,5 +1,7 @@
 package com.equipo.miranchopro.interfaz.pantallas.insumos
 
+import com.equipo.miranchopro.interfaz.componentes.*
+import com.equipo.miranchopro.utils.Validaciones
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,17 +38,22 @@ fun PantallaInsumos(
     var mostrarDialogoConsumo by remember { mutableStateOf<Insumo?>(null) }
     var menuExpandido by remember { mutableStateOf(false) }
 
+    LaunchedEffect(mostrarDialogo, mostrarDialogoConsumo?.id, insumoAAbastecer?.id) { viewModel.limpiarError() }
+    LaunchedEffect(viewModel.versionGuardado) { if(viewModel.versionGuardado>0) {mostrarDialogo=false;insumoAEditar=null;mostrarDialogoConsumo=null;insumoAAbastecer=null} }
+    var insumoAEliminar by remember { mutableStateOf<Insumo?>(null) }
+    insumoAEliminar?.let { insumo -> ConfirmarEliminacion(insumo.nombre,{insumoAEliminar=null},{viewModel.eliminarInsumo(insumo);insumoAEliminar=null}) }
     if (mostrarDialogo) {
         DialogoInsumo(
+            guardando=viewModel.guardando,errorOperacion=viewModel.errorOperacion,
             insumoExistente = insumoAEditar,
-            onDismiss = { 
+            onDismiss = {
                 mostrarDialogo = false
                 insumoAEditar = null
             },
             onConfirm = { nombre, tipo, cantidad, unidad ->
-                viewModel.agregarInsumo(nombre, tipo, cantidad, unidad)
-                mostrarDialogo = false
-                insumoAEditar = null
+                val anterior = insumoAEditar
+                if(anterior==null) viewModel.agregarInsumo(nombre,tipo,cantidad,unidad)
+                else viewModel.guardar(anterior.copy(nombre=nombre,tipo=tipo,cantidad=cantidad,unidadMedida=unidad))
             }
         )
     }
@@ -54,10 +61,10 @@ fun PantallaInsumos(
     if (mostrarDialogoConsumo != null) {
         DialogoRegistrarConsumo(
             insumo = mostrarDialogoConsumo!!,
+            guardando=viewModel.guardando,errorOperacion=viewModel.errorOperacion,
             onDismiss = { mostrarDialogoConsumo = null },
             onConfirm = { cantidad ->
                 viewModel.registrarConsumo(mostrarDialogoConsumo!!, cantidad)
-                mostrarDialogoConsumo = null
             }
         )
     }
@@ -65,20 +72,21 @@ fun PantallaInsumos(
     if (insumoAAbastecer != null) {
         DialogoAbastecerInsumo(
             insumo = insumoAAbastecer!!,
+            guardando=viewModel.guardando,errorOperacion=viewModel.errorOperacion,
             onDismiss = { insumoAAbastecer = null },
             onConfirm = { cantidad ->
                 viewModel.abastecerInsumo(insumoAAbastecer!!, cantidad)
-                insumoAAbastecer = null
             }
         )
     }
 
     Scaffold(
+        snackbarHost={ MensajeFormulario(viewModel.errorOperacion) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { 
+                onClick = {
                     insumoAEditar = null
-                    mostrarDialogo = true 
+                    mostrarDialogo = true
                 },
                 containerColor = Color(0xFF008577),
                 contentColor = Color.White,
@@ -92,11 +100,11 @@ fun PantallaInsumos(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(bottom = padding.calculateBottomPadding())
         ) {
             Surface(
-                color = Color.Black,
+                color = Color(0xFF004D40),
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -134,7 +142,7 @@ fun PantallaInsumos(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Perfil") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Perfil.ruta)
                                 },
@@ -142,7 +150,7 @@ fun PantallaInsumos(
                             )
                             DropdownMenuItem(
                                 text = { Text("Configuración") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Configuracion.ruta)
                                 },
@@ -151,7 +159,7 @@ fun PantallaInsumos(
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Cerrar sesión") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Login.ruta) {
                                         popUpTo(0)
@@ -166,7 +174,7 @@ fun PantallaInsumos(
 
             if (insumos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay insumos registrados", color = Color.Gray)
+                    Text("No hay insumos registrados", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(
@@ -179,7 +187,8 @@ fun PantallaInsumos(
                             insumo = insumo,
                             onRegistrarConsumo = { mostrarDialogoConsumo = insumo },
                             onAbastecer = { insumoAAbastecer = insumo },
-                            onDelete = { viewModel.eliminarInsumo(insumo) }
+                            onDelete = { insumoAEliminar = insumo },
+                            onEdit = {insumoAEditar=insumo;mostrarDialogo=true}
                         )
                     }
                 }
@@ -193,11 +202,12 @@ fun TarjetaInsumo(
     insumo: Insumo,
     onRegistrarConsumo: () -> Unit,
     onAbastecer: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -218,7 +228,7 @@ fun TarjetaInsumo(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(insumo.nombre, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                    Text(insumo.tipo, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Text(insumo.tipo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
@@ -228,16 +238,17 @@ fun TarjetaInsumo(
                         color = if (insumo.cantidad <= 10) Color.Red else Color.Black
                     )
                     if (insumo.cantidad <= 10) {
-                        Text("¡Stock Bajo!", color = Color.Red, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("¡Stock Bajo!", color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onEdit) { Icon(Icons.Default.Edit,"Editar insumo") }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.LightGray)
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row {
                     TextButton(onClick = onRegistrarConsumo) {
@@ -258,75 +269,22 @@ fun TarjetaInsumo(
 }
 
 @Composable
-fun DialogoRegistrarConsumo(
-    insumo: Insumo,
-    onDismiss: () -> Unit,
-    onConfirm: (Double) -> Unit
-) {
-    var cantidad by remember { mutableStateOf("") }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Registrar Suministro") },
-        text = {
-            Column {
-                Text("¿Cuánto de ${insumo.nombre} se utilizó?")
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = cantidad,
-                    onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) cantidad = it },
-                    label = { Text("Cantidad a descontar (${insumo.unidadMedida})") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = { 
-                cantidad.toDoubleOrNull()?.let { onConfirm(it) }
-            }) {
-                Text("Descontar")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
-    )
+fun DialogoRegistrarConsumo(insumo: Insumo, guardando: Boolean = false, errorOperacion: String? = null, onDismiss: () -> Unit, onConfirm: (Double) -> Unit) {
+    DialogoCantidadInsumo(insumo,false,guardando,errorOperacion,onDismiss,onConfirm)
 }
-
 @Composable
-fun DialogoAbastecerInsumo(
-    insumo: Insumo,
-    onDismiss: () -> Unit,
-    onConfirm: (Double) -> Unit
-) {
-    var cantidad by remember { mutableStateOf("") }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Abastecer Inventario") },
-        text = {
-            Column {
-                Text("¿Cuánto de ${insumo.nombre} se compró/recibió?")
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = cantidad,
-                    onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) cantidad = it },
-                    label = { Text("Cantidad a añadir (${insumo.unidadMedida})") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = { 
-                cantidad.toDoubleOrNull()?.let { onConfirm(it) }
-            }) {
-                Text("Sumar al stock")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
-    )
+fun DialogoAbastecerInsumo(insumo: Insumo, guardando: Boolean = false, errorOperacion: String? = null, onDismiss: () -> Unit, onConfirm: (Double) -> Unit) {
+    DialogoCantidadInsumo(insumo,true,guardando,errorOperacion,onDismiss,onConfirm)
+}
+@Composable
+private fun DialogoCantidadInsumo(insumo: Insumo, sumar: Boolean, guardando: Boolean, errorOperacion: String?, onDismiss: () -> Unit, onConfirm: (Double) -> Unit) {
+    var cantidad by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var intento by remember { mutableStateOf(false) }
+    val numero=Validaciones.decimal(cantidad)
+    val error=if(intento && (numero==null || numero<=0)) "Ingresa una cantidad mayor que cero" else if(intento && !sumar && numero!=null && numero>insumo.cantidad) "No hay existencias suficientes" else null
+    FormularioDialogo(if(sumar) "Abastecer insumo" else "Registrar consumo",onDismiss,guardando,errorOperacion) {
+        Text("${insumo.nombre}: ${insumo.cantidad} ${insumo.unidadMedida} disponibles")
+        CampoFormulario("Cantidad en ${insumo.unidadMedida} *",cantidad,{cantidad=it},error,teclado=androidx.compose.ui.text.input.KeyboardType.Decimal)
+        Button(onClick={intento=true; if(numero!=null && numero>0 && (sumar || numero<=insumo.cantidad)) onConfirm(numero)},enabled=!guardando,modifier=Modifier.fillMaxWidth()){Text(if(sumar) "Abastecer" else "Descontar")}
+    }
 }

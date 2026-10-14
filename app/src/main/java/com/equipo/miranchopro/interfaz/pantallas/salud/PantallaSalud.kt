@@ -42,58 +42,69 @@ fun PantallaSalud(
 ) {
     var vistaActual by remember { mutableStateOf(VistaSalud.CATEGORIAS) }
     var menuExpandido by remember { mutableStateOf(false) }
-    
+
     var mostrarDialogoMedicamento by remember { mutableStateOf(false) }
     var medicamentoAEditar by remember { mutableStateOf<Medicamento?>(null) }
     var mostrarDialogoVacunacion by remember { mutableStateOf(false) }
     var mostrarDialogoEnfermedad by remember { mutableStateOf(false) }
     var enfermedadACompletar by remember { mutableStateOf<Enfermedad?>(null) }
 
+    val animales by viewModel.listaAnimales.collectAsState()
     val medicamentos by viewModel.listaMedicamentos.collectAsState()
     val vacunaciones by viewModel.listaVacunaciones.collectAsState()
     val enfermedades by viewModel.listaEnfermedades.collectAsState()
-    
+
     val pendientes = enfermedades.filter { it.estado == "Pendiente" }
     val activas = enfermedades.filter { it.estado == "Activo" || it.estado == "Recuperado" }
 
+    LaunchedEffect(mostrarDialogoMedicamento, mostrarDialogoVacunacion, mostrarDialogoEnfermedad, enfermedadACompletar?.id) { viewModel.limpiarError() }
+    LaunchedEffect(viewModel.versionGuardado) {
+        if(viewModel.versionGuardado>0) { mostrarDialogoMedicamento=false; medicamentoAEditar=null; mostrarDialogoVacunacion=false; mostrarDialogoEnfermedad=false; enfermedadACompletar=null }
+    }
+    var medicamentoAEliminar by remember { mutableStateOf<Medicamento?>(null) }
+    medicamentoAEliminar?.let { m -> ConfirmarEliminacion(m.nombre,{medicamentoAEliminar=null},{viewModel.eliminarMedicamento(m);medicamentoAEliminar=null}) }
     if (enfermedadACompletar != null) {
         DialogoEnfermedad(
+            guardando=viewModel.guardando, errorOperacion=viewModel.errorOperacion,
+            animales=animales,
             onDismiss = { enfermedadACompletar = null },
             onConfirm = { datosNuevos ->
                 viewModel.actualizarEnfermedad(datosNuevos.copy(id = enfermedadACompletar!!.id, estado = "Activo"))
-                enfermedadACompletar = null
             }
         )
     }
 
     if (mostrarDialogoMedicamento) {
         DialogoMedicamento(
+            guardando=viewModel.guardando, errorOperacion=viewModel.errorOperacion,
             medicamentoExistente = medicamentoAEditar,
             validarNombre = { nombre, id -> viewModel.existeMedicamento(nombre, id) },
             onDismiss = { mostrarDialogoMedicamento = false; medicamentoAEditar = null },
-            onConfirm = { 
+            onConfirm = {
                 if (medicamentoAEditar != null) {
                     viewModel.editarMedicamento(it)
                 } else {
                     viewModel.agregarMedicamento(it)
                 }
-                mostrarDialogoMedicamento = false
-                medicamentoAEditar = null
             }
         )
     }
 
     if (mostrarDialogoVacunacion) {
         DialogoVacunacion(
+            guardando=viewModel.guardando, errorOperacion=viewModel.errorOperacion,
+            animales=animales,
             onDismiss = { mostrarDialogoVacunacion = false },
-            onConfirm = { viewModel.registrarVacunacion(it); mostrarDialogoVacunacion = false }
+            onConfirm = { viewModel.registrarVacunacion(it) }
         )
     }
 
     if (mostrarDialogoEnfermedad) {
         DialogoEnfermedad(
+            guardando=viewModel.guardando, errorOperacion=viewModel.errorOperacion,
+            animales=animales,
             onDismiss = { mostrarDialogoEnfermedad = false },
-            onConfirm = { viewModel.registrarEnfermedad(it); mostrarDialogoEnfermedad = false }
+            onConfirm = { viewModel.registrarEnfermedad(it) }
         )
     }
 
@@ -102,6 +113,7 @@ fun PantallaSalud(
     }
 
     Scaffold(
+        snackbarHost={ MensajeFormulario(viewModel.errorOperacion) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             if (vistaActual != VistaSalud.CATEGORIAS && vistaActual != VistaSalud.LISTA_PENDIENTES) {
@@ -117,18 +129,18 @@ fun PantallaSalud(
                     containerColor = Color(0xFF008577),
                     contentColor = Color.White,
                     shape = CircleShape
-                ) { Icon(Icons.Default.Add, null) }
+                ) { Icon(Icons.Default.Add, "Agregar registro") }
             }
         }
     ) { relleno ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(bottom = relleno.calculateBottomPadding())
         ) {
             Surface(
-                color = Color.Black,
+                color = Color(0xFF004D40),
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -151,7 +163,7 @@ fun PantallaSalud(
                             Text(
                                 text = when(vistaActual) {
                                     VistaSalud.CATEGORIAS -> "Salud Animal"
-                                    VistaSalud.LISTA_MEDICAMENTOS -> "Medicinas"
+                                    VistaSalud.LISTA_MEDICAMENTOS -> "Medicamentos"
                                     VistaSalud.LISTA_VACUNACION -> "Vacunas"
                                     VistaSalud.LISTA_ENFERMEDADES -> "Historial"
                                     VistaSalud.LISTA_PENDIENTES -> "Pendientes"
@@ -178,7 +190,7 @@ fun PantallaSalud(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Perfil") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Perfil.ruta)
                                 },
@@ -186,7 +198,7 @@ fun PantallaSalud(
                             )
                             DropdownMenuItem(
                                 text = { Text("Clima Detallado") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.ClimaDetallado.ruta)
                                 },
@@ -194,7 +206,7 @@ fun PantallaSalud(
                             )
                             DropdownMenuItem(
                                 text = { Text("Configuración") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Configuracion.ruta)
                                 },
@@ -203,7 +215,7 @@ fun PantallaSalud(
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Cerrar sesión") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Login.ruta) {
                                         popUpTo(0)
@@ -222,7 +234,7 @@ fun PantallaSalud(
                         LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             if (pendientes.isNotEmpty()) {
                                 item {
-                                    Text("ALERTAS POR COMPLETAR", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Red, letterSpacing = 1.5.sp)
+                                    Text("ALERTAS POR COMPLETAR", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.Red, letterSpacing = 1.5.sp)
                                 }
                                 item {
                                     CardCategoriaLujo(
@@ -236,7 +248,7 @@ fun PantallaSalud(
                                 }
                             }
                             item {
-                                Text("SECCIONES MÉDICAS", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.Gray, letterSpacing = 1.5.sp)
+                                Text("SECCIONES MÉDICAS", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.5.sp)
                             }
                             item {
                                 CardCategoriaLujo(
@@ -273,14 +285,14 @@ fun PantallaSalud(
                                 Card(
                                     modifier = Modifier.fillMaxWidth().clickable { enfermedadACompletar = alerta },
                                     shape = RoundedCornerShape(20.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                                 ) {
                                     Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Default.PendingActions, null, tint = Color.Red)
                                         Spacer(Modifier.width(16.dp))
                                         Column(Modifier.weight(1f)) {
                                             Text("Alerta del Sensor", fontWeight = FontWeight.Bold)
-                                            Text("Detectada: ${alerta.fechaDeteccion}", fontSize = 12.sp, color = Color.Gray)
+                                            Text("Detectada: ${alerta.fechaDeteccion}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         Text("Completar", color = Color(0xFF008577), fontWeight = FontWeight.Bold)
                                     }
@@ -288,7 +300,7 @@ fun PantallaSalud(
                             }
                         }
                     }
-                    VistaSalud.LISTA_MEDICAMENTOS -> SeccionListaMedicamentos(medicamentos, viewModel) { medicamento -> medicamentoAEditar = medicamento; mostrarDialogoMedicamento = true }
+                    VistaSalud.LISTA_MEDICAMENTOS -> SeccionListaMedicamentos(medicamentos, {medicamentoAEliminar=it}) { medicamento -> medicamentoAEditar = medicamento; mostrarDialogoMedicamento = true }
                     VistaSalud.LISTA_VACUNACION -> SeccionListaVacunacion(vacunaciones)
                     VistaSalud.LISTA_ENFERMEDADES -> SeccionListaEnfermedades(activas, { enf, estado -> viewModel.actualizarEstadoEnfermedad(enf, estado) })
                 }
@@ -298,10 +310,10 @@ fun PantallaSalud(
 }
 
 @Composable
-fun SeccionListaMedicamentos(lista: List<Medicamento>, viewModel: SaludViewModel, alEditar: (Medicamento) -> Unit) {
+fun SeccionListaMedicamentos(lista: List<Medicamento>, alEliminar: (Medicamento) -> Unit, alEditar: (Medicamento) -> Unit) {
     if (lista.isEmpty()) EmptyStateSalud("No hay medicamentos") else {
         LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(lista) { medicamento -> TarjetaMedicamento(medicamento = medicamento, onEdit = { alEditar(medicamento) }, onDelete = { viewModel.eliminarMedicamento(medicamento) }) }
+            items(lista) { medicamento -> TarjetaMedicamento(medicamento = medicamento, onEdit = { alEditar(medicamento) }, onDelete = { alEliminar(medicamento) }) }
         }
     }
 }
@@ -311,12 +323,12 @@ fun SeccionListaVacunacion(lista: List<Vacunacion>) {
     if (lista.isEmpty()) EmptyStateSalud("No hay vacunas") else {
         LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             items(lista) { vacuna ->
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(2.dp)) {
                     Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                         Surface(color = Color(0xFFE8F5E9), shape = CircleShape, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Vaccines, null, tint = Color(0xFF4CAF50), modifier = Modifier.padding(12.dp)) }
                         Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) { Text(vacuna.nombreVacuna, fontWeight = FontWeight.Bold, fontSize = 18.sp); Text("Animal: #${vacuna.idAnimal}", color = Color.Gray) }
-                        Column(horizontalAlignment = Alignment.End) { Text(vacuna.fechaAplicacion, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50)); Text("Dosis: ${vacuna.dosis}", fontSize = 12.sp, color = Color.Gray) }
+                        Column(Modifier.weight(1f)) { Text(vacuna.nombreVacuna, fontWeight = FontWeight.Bold, fontSize = 18.sp); Text("Animal: #${vacuna.idAnimal}", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        Column(horizontalAlignment = Alignment.End) { Text(vacuna.fechaAplicacion, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50)); Text("Dosis: ${vacuna.dosis}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
             }
@@ -329,11 +341,11 @@ fun SeccionListaEnfermedades(lista: List<Enfermedad>, alCambiarEstado: (Enfermed
     if (lista.isEmpty()) EmptyStateSalud("No hay reportes") else {
         LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             items(lista) { enfermedad ->
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column(Modifier.padding(20.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(color = if(enfermedad.estado == "Activo") Color(0xFFFFEBEE) else Color(0xFFE8F5E9), shape = CircleShape, modifier = Modifier.size(40.dp)) { Icon(if(enfermedad.estado == "Activo") Icons.Default.Warning else Icons.Default.CheckCircle, null, tint = if(enfermedad.estado == "Activo") Color.Red else Color(0xFF4CAF50), modifier = Modifier.padding(10.dp)) }
-                            Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text(enfermedad.nombre, fontWeight = FontWeight.Black, fontSize = 20.sp); Text("Animal: #${enfermedad.idAnimal}", color = Color.Gray) }
+                            Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text(enfermedad.nombre, fontWeight = FontWeight.Black, fontSize = 20.sp); Text("Animal: #${enfermedad.idAnimal}", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                             Badge(containerColor = if(enfermedad.estado == "Activo") Color.Red else Color(0xFF4CAF50)) { Text(enfermedad.estado.uppercase(), color = Color.White, modifier = Modifier.padding(horizontal = 8.dp)) }
                         }
                         Spacer(modifier = Modifier.height(16.dp)); Text("Síntomas: ${enfermedad.sintomas}", fontSize = 14.sp); Text("Tratamiento: ${enfermedad.tratamiento}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF008577))
@@ -346,7 +358,7 @@ fun SeccionListaEnfermedades(lista: List<Enfermedad>, alCambiarEstado: (Enfermed
 }
 
 @Composable
-fun EmptyStateSalud(mensaje: String) { Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(mensaje, color = Color.Gray) } }
+fun EmptyStateSalud(mensaje: String) { Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(mensaje, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
 
 @Composable
 fun CardCategoriaLujo(
@@ -356,8 +368,8 @@ fun CardCategoriaLujo(
     Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = colorFondo), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
         Row(modifier = Modifier.padding(24.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(52.dp).background(colorIcono.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) { Icon(icono, null, tint = colorIcono, modifier = Modifier.size(28.dp)) }
-            Spacer(modifier = Modifier.width(20.dp)); Column(modifier = Modifier.weight(1f)) { Text(text = titulo, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black); Text(text = subtitulo, color = Color.Gray, fontSize = 14.sp) }
-            Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray)
+            Spacer(modifier = Modifier.width(20.dp)); Column(modifier = Modifier.weight(1f)) { Text(text = titulo, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface); Text(text = subtitulo, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp) }
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

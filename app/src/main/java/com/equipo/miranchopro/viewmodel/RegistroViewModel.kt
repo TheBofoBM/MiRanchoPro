@@ -17,6 +17,10 @@ class RegistroViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
 
     var mensajeError by mutableStateOf<String?>(null)
         private set
+    var usuarioRegistrado by mutableStateOf<com.equipo.miranchopro.data.model.Usuario?>(null)
+        private set
+    var estaCargando by mutableStateOf(false)
+        private set
     var registroExitoso by mutableStateOf(false)
         private set
 
@@ -30,6 +34,8 @@ class RegistroViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
             return
         }
 
+        if (estaCargando) return
+        estaCargando = true
         viewModelScope.launch {
             val resultado = registrarUsuarioUseCase.ejecutar(
                 correo = correo,
@@ -37,8 +43,10 @@ class RegistroViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
                 confirmarContrasena = confirmarContrasena
             )
 
+            estaCargando = false
             when (resultado) {
                 is ResultadoRegistro.Exito -> {
+                    usuarioRegistrado = usuarioDao.buscarPorCorreo(com.equipo.miranchopro.utils.Validaciones.correo(correo))?.copy(contrasena = "")
                     registroExitoso = true
                 }
                 is ResultadoRegistro.CorreoDuplicado -> {

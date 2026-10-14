@@ -22,6 +22,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import com.equipo.miranchopro.utils.Validaciones
 
 class RegistrarAnimalViewModel(
     private val repositorio: AnimalRepository,
@@ -40,7 +41,7 @@ class RegistrarAnimalViewModel(
     var color by mutableStateOf("")
     var marcas by mutableStateOf("")
     var ubicacion by mutableStateOf("Sin Lote")
-    
+
     // Para mantener la fecha de registro original en casos de "Parto detectado"
     private var fechaRegistroOriginal: Long? = null
 
@@ -51,7 +52,7 @@ class RegistrarAnimalViewModel(
     // Estado para la foto
     var fotoUri by mutableStateOf<Uri?>(null)
     var fotoPath by mutableStateOf<String?>(null)
-    
+
     // URI temporal para la cámara
     private var tempCameraUri: Uri? = null
 
@@ -60,10 +61,13 @@ class RegistrarAnimalViewModel(
     private var idTemporalOriginal by mutableStateOf<String?>(null)
     var horaNacimientoRegistrada by mutableStateOf("00:00:00")
 
-    val tiposDisponibles = listOf("Vaca", "Toro", "Becerro", "Novillo", "Vaquilla")
+    val tiposDisponibles = listOf("Vaca", "Toro", "Becerro", "Becerra", "Novillo", "Vaquilla")
     val origenesDisponibles = listOf("De parto", "Comprada")
 
     var estaCargando by mutableStateOf(false)
+        private set
+
+    var erroresCampos by mutableStateOf<Map<String, String>>(emptyMap())
         private set
 
     var mensajeError by mutableStateOf<String?>(null)
@@ -84,7 +88,7 @@ class RegistrarAnimalViewModel(
     private fun cargarLotes() {
         viewModelScope.launch {
             loteRepositorio.obtenerTodosLosLotes().collect { lotes ->
-                listaLotes = if (lotes.isEmpty()) listOf("Sin Lote") else lotes.map { it.nombre }
+                listaLotes = listOf("Sin Lote") + lotes.map { it.nombre }
                 if (ubicacion !in listaLotes) {
                     ubicacion = if (listaLotes.isNotEmpty()) listaLotes.first() else "Sin Lote"
                 }
@@ -114,7 +118,7 @@ class RegistrarAnimalViewModel(
     fun crearUriTemporalCamara(context: Context): Uri {
         val directory = File(context.getExternalFilesDir(null), "FotoAnimales")
         if (!directory.exists()) directory.mkdirs()
-        
+
         val file = File.createTempFile("IMG_", ".jpg", directory)
         val uri = FileProvider.getUriForFile(
             context,
@@ -131,30 +135,26 @@ class RegistrarAnimalViewModel(
 
     fun registrarAnimal(context: Context) {
         if (estaCargando) return
-        if (idArete.isBlank() || peso.isBlank() || fechaNacimiento.isBlank()) {
-            mensajeError = "Arete, Peso y Fecha de Nacimiento son obligatorios"
+        erroresCampos = Validaciones.erroresAnimal(idArete, peso, fechaNacimiento)
+        if (erroresCampos.isNotEmpty()) {
+            mensajeError = "Revisa los campos señalados"
             return
         }
-
-        val pesoDouble = peso.toDoubleOrNull()
-        if (pesoDouble == null) {
-            mensajeError = "El peso debe ser un número válido"
-            return
-        }
+        val pesoDouble = Validaciones.decimal(peso)!!
 
         estaCargando = true
         mensajeError = null
 
         viewModelScope.launch {
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            val fechaNacLong = try { sdf.parse(fechaNacimiento)?.time } catch (e: Exception) { null }
+            val fechaNacLong = Validaciones.fecha(fechaNacimiento)
 
             var animalAGuardar = Animal(
                 idArete = idArete.trim(),
                 nombre = nombre.trim(),
                 tipo = tipo,
                 raza = if (raza.isBlank()) "Serrana" else raza,
-                edad = calcularEdad(fechaNacimiento),
+                edad = Validaciones.edad(fechaNacLong),
                 peso = pesoDouble,
                 caracteristica = caracteristica,
                 origen = origen,
@@ -187,7 +187,8 @@ class RegistrarAnimalViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _eventoUI.emit(EventoUI.Error("No se pudo guardar. Revisa el arete y la fotografía e inténtalo de nuevo."))
+                mensajeError = Validaciones.mensaje(e, "No se pudo guardar. Revisa el arete y la fotografía e inténtalo de nuevo.")
+                _eventoUI.emit(EventoUI.Error(mensajeError!!))
             } finally {
                 try {
                     if (!guardadoConfirmado) {
@@ -209,24 +210,8 @@ class RegistrarAnimalViewModel(
         }
     }
 
-    private fun calcularEdad(fecha: String): String {
-        return try {
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            val fechaNac = sdf.parse(fecha) ?: return "Desconocida"
-            val hoy = Calendar.getInstance()
-            val nac = Calendar.getInstance().apply { time = fechaNac }
-            var anios = hoy.get(Calendar.YEAR) - nac.get(Calendar.YEAR)
-            var meses = hoy.get(Calendar.MONTH) - nac.get(Calendar.MONTH)
-            if (meses < 0) { anios--; meses += 12 }
-            when {
-                anios > 0 -> "$anios años, $meses meses"
-                meses > 0 -> "$meses meses"
-                else -> "Recién nacido"
-            }
-        } catch (e: Exception) { "Desconocida" }
-    }
-
     fun limpiarCampos() {
+        erroresCampos = emptyMap(); mensajeError = null
         idArete = ""; nombre = ""; tipo = "Becerro"; raza = "Serrana"
         fechaNacimiento = ""; peso = ""; caracteristica = ""; origen = "De parto"
         color = ""; marcas = ""; ubicacion = listaLotes.firstOrNull() ?: "Sin Lote"

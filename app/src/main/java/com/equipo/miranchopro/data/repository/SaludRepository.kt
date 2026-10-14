@@ -13,23 +13,53 @@ import java.util.*
 class SaludRepository(
     private val medicamentoDao: MedicamentoDao,
     private val vacunacionDao: VacunacionDao,
-    private val enfermedadDao: EnfermedadDao
+    private val enfermedadDao: EnfermedadDao,
+    private val animalDao: com.equipo.miranchopro.data.local.dao.AnimalDao
 ) {
+    fun obtenerAnimales() = animalDao.obtenerTodos()
+    private suspend fun validarAnimal(id: String) {
+        val animal = animalDao.obtenerPorId(id) ?: throw IllegalArgumentException("Selecciona un animal existente")
+        require(animal.estado !in listOf("Baja","Pendiente")) { "Selecciona un animal activo" }
+    }
+    private fun validarMedicamento(m: Medicamento) {
+        require(m.nombre.isNotBlank() && m.unidadMedida.isNotBlank() && m.stock>=0) { "Revisa nombre, unidad y existencias" }
+    }
     // Medicamentos
     fun obtenerMedicamentos(): Flow<List<Medicamento>> = medicamentoDao.obtenerTodos()
     suspend fun buscarMedicamentoPorNombre(nombre: String): Medicamento? = medicamentoDao.buscarPorNombre(nombre)
-    suspend fun insertarMedicamento(medicamento: Medicamento) = medicamentoDao.insertar(medicamento)
-    suspend fun actualizarMedicamento(medicamento: Medicamento) = medicamentoDao.actualizar(medicamento)
+    suspend fun insertarMedicamento(medicamento: Medicamento) {
+        validarMedicamento(medicamento)
+        require(medicamentoDao.buscarPorNombre(medicamento.nombre)?.id.let { it==null || it==medicamento.id }) { "Este medicamento ya existe" }
+        medicamentoDao.guardarValidado(medicamento, true)
+    }
+    suspend fun actualizarMedicamento(medicamento: Medicamento) {
+        validarMedicamento(medicamento)
+        require(medicamentoDao.buscarPorNombre(medicamento.nombre)?.id.let { it==null || it==medicamento.id }) { "Este medicamento ya existe" }
+        medicamentoDao.guardarValidado(medicamento, false)
+    }
     suspend fun eliminarMedicamento(medicamento: Medicamento) = medicamentoDao.eliminar(medicamento)
 
     // Vacunaciones
     fun obtenerVacunaciones(): Flow<List<Vacunacion>> = vacunacionDao.obtenerTodas()
-    suspend fun registrarVacunacion(vacunacion: Vacunacion) = vacunacionDao.insertar(vacunacion)
+    suspend fun registrarVacunacion(vacunacion: Vacunacion) {
+        validarAnimal(vacunacion.idAnimal)
+        require(vacunacion.nombreVacuna.isNotBlank() && vacunacion.dosis.isNotBlank()) { "Vacuna y dosis son obligatorias" }
+        val reglas = com.equipo.miranchopro.utils.Validaciones
+        require(reglas.errorFecha(vacunacion.fechaAplicacion,"La fecha")==null) { "Ingresa una fecha de aplicación válida" }
+        val proxima=vacunacion.proximaDosis
+        if (!proxima.isNullOrBlank()) require(reglas.errorFecha(proxima,"La próxima fecha",permitirFutura=true)==null && reglas.fecha(proxima)!!>=reglas.fecha(vacunacion.fechaAplicacion)!!) { "La próxima fecha debe ser válida y posterior a la aplicación" }
+        vacunacionDao.insertar(vacunacion)
+    }
 
     // Enfermedades
     fun obtenerEnfermedades(): Flow<List<Enfermedad>> = enfermedadDao.obtenerTodas()
-    suspend fun registrarEnfermedad(enfermedad: Enfermedad) = enfermedadDao.insertar(enfermedad)
-    suspend fun actualizarEnfermedad(enfermedad: Enfermedad) = enfermedadDao.actualizar(enfermedad)
+    suspend fun registrarEnfermedad(enfermedad: Enfermedad) { validarEnfermedad(enfermedad); enfermedadDao.insertar(enfermedad) }
+    suspend fun actualizarEnfermedad(enfermedad: Enfermedad) { validarEnfermedad(enfermedad); enfermedadDao.actualizar(enfermedad) }
+    private suspend fun validarEnfermedad(e: Enfermedad) {
+        validarAnimal(e.idAnimal)
+        require(e.nombre.isNotBlank() && e.sintomas.isNotBlank()) { "Nombre y síntomas son obligatorios" }
+        require(com.equipo.miranchopro.utils.Validaciones.errorFecha(e.fechaDeteccion,"La fecha")==null) { "Ingresa una fecha de detección válida" }
+    }
 
     suspend fun registrarAlertaEnfermedadRapida(): Result<String> {
         return try {

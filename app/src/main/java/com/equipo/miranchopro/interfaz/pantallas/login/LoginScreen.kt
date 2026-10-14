@@ -41,9 +41,9 @@ import com.equipo.miranchopro.viewmodel.LoginViewModel
 
 private val ForestGreen = Color(0xFF004D40)
 private val EmeraldPrimary = Color(0xFF00897B)
-private val DarkSlate = Color(0xFF263238)
-private val SoftGray = Color(0xFF78909C)
-private val InputBackground = Color(0xFFF1F4F9)
+private val DarkSlate: Color @Composable get() = MaterialTheme.colorScheme.onSurface
+private val SoftGray: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val InputBackground: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,17 +62,11 @@ fun LoginScreen(
         }
     }
 
-    LaunchedEffect(viewModel.mensajeError) {
-        viewModel.mensajeError?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.limpiarMensaje()
-        }
-    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         // Círculo decorativo de fondo
         Box(
@@ -142,7 +136,7 @@ fun LoginScreen(
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(32.dp),
-                    colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
+                    colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp)
                 ) {
                     Column(modifier = Modifier.padding(32.dp)) {
@@ -196,7 +190,9 @@ fun LoginScreen(
                                 .clickable { onForgotPassword() }
                         )
 
+                        com.equipo.miranchopro.interfaz.componentes.MensajeFormulario(viewModel.mensajeError)
                         Button(
+                            enabled=!viewModel.estaCargando,
                             onClick = { viewModel.iniciarSesion(false) },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -270,8 +266,8 @@ private fun ModernLoginInput(
                     IconButton(onClick = onTogglePassword) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = null,
-                            tint = Color.Gray
+                            contentDescription = if(passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

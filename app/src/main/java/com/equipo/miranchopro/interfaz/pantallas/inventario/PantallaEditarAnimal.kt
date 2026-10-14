@@ -1,5 +1,6 @@
 package com.equipo.miranchopro.interfaz.pantallas.inventario
 
+import com.equipo.miranchopro.interfaz.componentes.*
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -36,8 +37,8 @@ import com.equipo.miranchopro.modelovista.EditarAnimalViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 private val ColorTituloSeccion = Color(0xFF00897B)
-private val ColorIconoGris = Color(0xFF90A4AE)
-private val ColorTextoEtiqueta = Color(0xFF9E9E9E)
+private val ColorIconoGris: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val ColorTextoEtiqueta: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 private val EmeraldPrimary = Color(0xFF00897B)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,7 +53,7 @@ fun PantallaEditarAnimal(
     var mostrarDialogoOpcionesFoto by remember { mutableStateOf(false) }
     var mostrarConfirmacionCamara by remember { mutableStateOf(false) }
     var tempUriCamara by remember { mutableStateOf<Uri?>(null) }
-    
+
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) viewModel.fotoUri = uri }
@@ -175,15 +176,16 @@ fun PantallaEditarAnimal(
             onDismissRequest = { viewModel.mostrarDialogoRegistroEmbarazo = false },
             title = { Text("Registrar Gestación", fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Ingresa la fecha de inseminación o monta natural para calcular el parto (9 lunas / 283 días).")
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Ingresa la fecha de monta o inseminación. La estimación suma 283 días y puede variar.")
                     OutlinedTextField(
                         value = viewModel.fechaInseminacionSeleccionada,
                         onValueChange = { viewModel.fechaInseminacionSeleccionada = it },
                         label = { Text("Fecha (dd/mm/aaaa)") },
                         modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
                     )
+                    MensajeFormulario(viewModel.mensajeError)
                     Text("Tipo de cruce:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = viewModel.tipoMating == "Monta Natural", onClick = { viewModel.tipoMating = "Monta Natural" })
@@ -196,7 +198,7 @@ fun PantallaEditarAnimal(
                 }
             },
             confirmButton = {
-                Button(onClick = { viewModel.registrarGestacion() }, colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)) {
+                Button(enabled = !viewModel.estaCargando, onClick = { viewModel.registrarGestacion() }, colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)) {
                     Text("Calcular y Guardar")
                 }
             },
@@ -211,10 +213,10 @@ fun PantallaEditarAnimal(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Ficha del Animal", fontWeight = FontWeight.Bold, color = Color(0xFFB0BEC5)) },
+                title = { Text("Ficha del Animal", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = alVolver) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color(0xFFB0BEC5))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 actions = {
@@ -222,7 +224,7 @@ fun PantallaEditarAnimal(
                         Icon(Icons.Default.Delete, contentDescription = "Dar de baja", tint = Color.Red)
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { relleno ->
@@ -234,13 +236,14 @@ fun PantallaEditarAnimal(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            
+
+            MensajeFormulario(viewModel.mensajeError)
             // --- SECCIÓN: FOTO ---
             CardSeccionEditar("Foto del Animal") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(220.dp)
+                        .height(140.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFFF5F5F5))
                         .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(16.dp))
@@ -257,7 +260,7 @@ fun PantallaEditarAnimal(
                         IconButton(
                             onClick = { viewModel.fotoUri = null; viewModel.fotoPath = null },
                             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                        ) { Icon(Icons.Default.Close, null, tint = Color.White) }
+                        ) { Icon(Icons.Default.Close, "Quitar fotografía", tint = Color.White) }
                     } else {
                         Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
                     }
@@ -272,16 +275,18 @@ fun PantallaEditarAnimal(
                             Icon(Icons.Default.CalendarMonth, null, tint = ColorTituloSeccion)
                             Spacer(Modifier.width(8.dp))
                             Column {
-                                Text("Fecha Probable de Parto", fontSize = 12.sp, color = Color.Gray)
+                                Text("Fecha Probable de Parto", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(viewModel.fechaProbablePartoFormateada ?: "", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = ColorTituloSeccion)
                             }
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Nota: Basado en el ciclo biológico de 283 días (aprox. 9 lunas). Se recomienda vigilar los cambios de fase lunar cercanos a esta fecha.",
+                            text = "Fecha estimada a partir de la monta o inseminación; el nacimiento puede ocurrir antes o después.",
                             fontSize = 12.sp,
                             color = Color.DarkGray
                         )
+                        TextButton(onClick={viewModel.cerrarGestacion("Finalizado")},enabled=!viewModel.estaCargando){Text("Marcar gestación finalizada")}
+                        TextButton(onClick={viewModel.cerrarGestacion("Interrumpido")},enabled=!viewModel.estaCargando){Text("Marcar gestación interrumpida")}
                     } else {
                         Button(
                             onClick = { viewModel.mostrarDialogoRegistroEmbarazo = true },
@@ -308,7 +313,7 @@ fun PantallaEditarAnimal(
 
             // --- SECCIÓN: UBICACIÓN (EDITABLE CON DROPDOWN) ---
             CardSeccionEditar("Ubicación Actual") {
-                Text("Lote Registrado", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Text("Lote Registrado", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(8.dp))
                 // Esta función se toma de PantallaRegistrarAnimal.kt para evitar duplicidad
                 SelectorLoteDropdown(
@@ -320,24 +325,26 @@ fun PantallaEditarAnimal(
 
             // --- SECCIÓN: NACIMIENTO Y ORIGEN ---
             CardSeccionEditar("Nacimiento y Origen") {
-                InfoItemLecturaFicha("Origen", viewModel.origen, Icons.Outlined.AutoAwesome)
+                SelectorFormulario("Origen", viewModel.origen, listOf("De parto","Comprada"), {viewModel.origen=it})
                 InfoItemLecturaFicha("Fecha de Registro en App", viewModel.fechaRegistroFormateada, Icons.Outlined.AppRegistration)
                 InfoItemLecturaFicha("Hora de Nacimiento", viewModel.horaNacimiento, Icons.Outlined.AccessTime)
             }
 
             // --- SECCIÓN: DATOS EDITABLES ---
             CardSeccionEditar("Características y Fechas") {
-                CampoEditable("Fecha de Nacimiento (dd/mm/aaaa)", viewModel.fechaNacimiento, { viewModel.fechaNacimiento = it })
-                CampoEditable("Peso (kg)", viewModel.peso, { viewModel.peso = it }, KeyboardType.Decimal)
+                CampoFormulario("Nacimiento (opcional)",viewModel.fechaNacimiento,{viewModel.fechaNacimiento=it},viewModel.erroresCampos["fecha"],"dd/mm/aaaa")
+                CampoFormulario("Peso en kg *",viewModel.peso,{viewModel.peso=it},viewModel.erroresCampos["peso"],"Ej. 45,5",KeyboardType.Decimal)
                 CampoEditable("Color", viewModel.color, { viewModel.color = it })
                 CampoEditable("Marcas / Señas", viewModel.marcas, { viewModel.marcas = it })
                 CampoEditable("Características / Notas", viewModel.caracteristica, { viewModel.caracteristica = it })
             }
 
+            MensajeFormulario(viewModel.mensajeError)
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = { viewModel.actualizarAnimal(context) },
+                enabled = !viewModel.estaCargando,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B))
@@ -348,7 +355,7 @@ fun PantallaEditarAnimal(
                     Text("ACTUALIZAR REGISTRO", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
@@ -362,7 +369,7 @@ fun PantallaEditarAnimal(
 fun CardSeccionEditar(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -381,7 +388,7 @@ private fun InfoItemLecturaFicha(label: String, value: String, icon: ImageVector
         Spacer(modifier = Modifier.width(16.dp))
         Column {
             Text(label, fontSize = 12.sp, color = ColorTextoEtiqueta)
-            Text(value, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            Text(value, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -389,7 +396,7 @@ private fun InfoItemLecturaFicha(label: String, value: String, icon: ImageVector
 @Composable
 fun CampoEditable(label: String, valor: String, onValueChange: (String) -> Unit, k: KeyboardType = KeyboardType.Text) {
     Column(modifier = Modifier.padding(bottom = 12.dp)) {
-        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         OutlinedTextField(
             value = valor,
             onValueChange = onValueChange,
@@ -398,7 +405,7 @@ fun CampoEditable(label: String, valor: String, onValueChange: (String) -> Unit,
                 .padding(top = 4.dp),
             keyboardOptions = KeyboardOptions(keyboardType = k),
             shape = RoundedCornerShape(12.dp),
-            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+            textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.Black,
                 unfocusedTextColor = Color.Black,

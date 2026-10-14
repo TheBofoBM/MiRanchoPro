@@ -28,7 +28,7 @@ fun TarjetaMedicamento(
             .padding(vertical = 8.dp)
             .clickable { onEdit() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -49,9 +49,9 @@ fun TarjetaMedicamento(
                     modifier = Modifier.padding(12.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = medicamento.nombre,
@@ -67,7 +67,7 @@ fun TarjetaMedicamento(
                     Text(
                         text = "Dosis: ${medicamento.dosis}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

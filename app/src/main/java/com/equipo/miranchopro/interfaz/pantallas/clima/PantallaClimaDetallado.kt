@@ -60,7 +60,7 @@ fun PantallaClimaDetallado(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
         ) {
             if (cargandoClima) {
@@ -69,11 +69,10 @@ fun PantallaClimaDetallado(
                     color = Color(0xFF008577)
                 )
             } else if (errorClima != null) {
-                Text(
-                    text = errorClima!!,
-                    color = Color.Red,
-                    modifier = Modifier.align(Alignment.Center).padding(16.dp)
-                )
+                Column(Modifier.align(Alignment.Center).padding(16.dp)) {
+                    Text(errorClima!!,color=MaterialTheme.colorScheme.error)
+                    TextButton(onClick={climaViewModel.obtenerClima()}){Text("Reintentar")}
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -98,11 +97,11 @@ fun PronosticoDiaCard(day: ForecastDay) {
             val formatInput = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val date = formatInput.parse(day.date)
             val today = Calendar.getInstance()
-            val forecastCal = Calendar.getInstance().apply { 
-                if (date != null) time = date 
+            val forecastCal = Calendar.getInstance().apply {
+                if (date != null) time = date
             }
-            
-            if (date != null && 
+
+            if (date != null &&
                 today.get(Calendar.DAY_OF_YEAR) == forecastCal.get(Calendar.DAY_OF_YEAR) &&
                 today.get(Calendar.YEAR) == forecastCal.get(Calendar.YEAR)) {
                 "Hoy"
@@ -120,7 +119,7 @@ fun PronosticoDiaCard(day: ForecastDay) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -131,7 +130,7 @@ fun PronosticoDiaCard(day: ForecastDay) {
             ) {
                 Column {
                     Text(text = diaNombre, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text(text = day.day.condition.text, color = Color.Gray, fontSize = 14.sp)
+                    Text(text = day.day.condition.text, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
                 AsyncImage(
                     model = "https:${day.day.condition.icon}",
@@ -141,15 +140,15 @@ fun PronosticoDiaCard(day: ForecastDay) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = "Pronóstico por hora",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 1.sp
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
 
             LazyRow(
@@ -184,7 +183,7 @@ fun ItemHoraClima(hour: Hour) {
             .padding(horizontal = 12.dp, vertical = 12.dp)
             .width(55.dp)
     ) {
-        Text(text = horaTexto, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+        Text(text = horaTexto, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(8.dp))
         AsyncImage(
             model = "https:${hour.condition.icon}",

@@ -8,6 +8,8 @@ class TareaRepository(private val tareaDao: TareaDao) {
 
     fun obtenerTodas(): Flow<List<Tarea>> = tareaDao.obtenerTodas()
 
+    suspend fun porId(id: Int) = tareaDao.porId(id)
+
     suspend fun agregarTarea(tarea: Tarea) {
         tareaDao.insertarTarea(tarea)
     }

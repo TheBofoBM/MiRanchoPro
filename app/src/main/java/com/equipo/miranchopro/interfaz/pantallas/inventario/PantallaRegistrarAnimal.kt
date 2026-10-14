@@ -1,5 +1,6 @@
 package com.equipo.miranchopro.interfaz.pantallas.inventario
 
+import com.equipo.miranchopro.interfaz.componentes.*
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -39,8 +40,8 @@ import kotlinx.coroutines.flow.collectLatest
 
 private val ForestGreen = Color(0xFF004D40)
 private val EmeraldPrimary = Color(0xFF00897B)
-private val ColorFondo = Color(0xFFF8F9FA)
-private val ColorGrisSuave = Color(0xFFF1F4F9)
+private val ColorFondo: Color @Composable get() = MaterialTheme.colorScheme.background
+private val ColorGrisSuave: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -161,160 +162,37 @@ fun PantallaRegistrarAnimal(
     }
 
     Scaffold(
-        containerColor = ColorFondo,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = { TopAppBar(title = { Text(if(viewModel.esEdicionPendiente) "Completar nacimiento" else "Registrar animal") },
+            navigationIcon = { IconButton(onClick=alFinalizar) { Icon(Icons.Default.ArrowBack,"Volver") } }) }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            // --- HEADER CURVO ESTILO PREMIUM ---
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(bottomStart = 60.dp))
-                    .background(Brush.verticalGradient(listOf(ForestGreen, EmeraldPrimary)))
-                    .padding(horizontal = 24.dp, vertical = 20.dp)
-            ) {
-                Column(modifier = Modifier.align(Alignment.BottomStart)) {
-                    IconButton(
-                        onClick = alFinalizar,
-                        modifier = Modifier.offset(x = (-12).dp)
-                    ) {
-                        Icon(Icons.Default.ArrowBack, "Volver", tint = Color.White)
-                    }
-                    Text(
-                        text = if (viewModel.esEdicionPendiente) "Completar" else "Registro",
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White,
-                        letterSpacing = (-1).sp
-                    )
-                    Text(
-                        text = if (viewModel.esEdicionPendiente) "Nacimiento detectado" else "Nuevo animal en inventario",
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+        Column(Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement=Arrangement.spacedBy(14.dp)) {
+            Text("Identificación",style=MaterialTheme.typography.titleMedium)
+            Text("Los campos con * son obligatorios. Puedes dejar el nacimiento vacío si lo desconoces.",style=MaterialTheme.typography.bodyMedium)
+            MensajeFormulario(viewModel.mensajeError)
+            CampoFormulario("Arete *",viewModel.idArete,{viewModel.idArete=it},viewModel.erroresCampos["arete"],"Ej. A-102",enfocar=viewModel.erroresCampos.keys.firstOrNull()=="arete")
+            CampoFormulario("Nombre (opcional)",viewModel.nombre,{viewModel.nombre=it},ejemplo="Ej. Lucero")
+            val hembra=viewModel.tipo in listOf("Vaca","Vaquilla","Becerra")
+            SelectorFormulario("Sexo",if(hembra) "Hembra" else "Macho",listOf("Hembra","Macho"),{sexo->viewModel.tipo=if(sexo=="Hembra") "Becerra" else "Becerro"})
+            SelectorFormulario("Categoría",viewModel.tipo,viewModel.tiposDisponibles.filter{if(hembra) it in listOf("Vaca","Vaquilla","Becerra") else it in listOf("Toro","Novillo","Becerro")},{viewModel.tipo=it})
+            CampoFormulario("Raza",viewModel.raza,{viewModel.raza=it})
+            CampoFormulario("Peso en kg *",viewModel.peso,{viewModel.peso=it},viewModel.erroresCampos["peso"],"Ej. 45,5",KeyboardType.Decimal,enfocar=viewModel.erroresCampos.keys.firstOrNull()=="peso")
+            CampoFormulario("Nacimiento (opcional)",viewModel.fechaNacimiento,{viewModel.fechaNacimiento=it},viewModel.erroresCampos["fecha"],"dd/mm/aaaa",enfocar=viewModel.erroresCampos.keys.firstOrNull()=="fecha")
+            SelectorFormulario("Origen",viewModel.origen,viewModel.origenesDisponibles,{viewModel.origen=it})
+            SelectorFormulario("Ubicación / lote",viewModel.ubicacion,viewModel.listaLotes,{viewModel.ubicacion=it})
+            CampoFormulario("Color (opcional)",viewModel.color,{viewModel.color=it})
+            CampoFormulario("Marcas (opcional)",viewModel.marcas,{viewModel.marcas=it})
+            Text("Fotografía opcional",style=MaterialTheme.typography.titleMedium)
+            if(viewModel.fotoUri!=null || viewModel.fotoPath!=null) {
+                AsyncImage(model=viewModel.fotoUri ?: viewModel.fotoPath,contentDescription="Fotografía del animal",modifier=Modifier.fillMaxWidth().height(140.dp),contentScale=ContentScale.Crop)
+                TextButton(onClick={viewModel.fotoUri=null;viewModel.fotoPath=null}){Text("Quitar fotografía")}
             }
-
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 20.dp)
-                    .offset(y = (-30).dp)
-            ) {
-                // --- SECCIÓN: FOTO ---
-                CardRegistroModerno("Identificación Visual") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(ColorGrisSuave)
-                            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(24.dp))
-                            .clickable { mostrarDialogoOpcionesFoto = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (viewModel.fotoUri != null || viewModel.fotoPath != null) {
-                            AsyncImage(
-                                model = viewModel.fotoUri ?: viewModel.fotoPath,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                            IconButton(
-                                onClick = { viewModel.fotoUri = null; viewModel.fotoPath = null },
-                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                            ) { Icon(Icons.Default.Close, null, tint = Color.White) }
-                        } else {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.AddAPhoto, null, tint = EmeraldPrimary, modifier = Modifier.size(44.dp))
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Agregar Foto", color = EmeraldPrimary, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-
-                // --- SECCIÓN 1: DATOS BÁSICOS ---
-                CardRegistroModerno("Información Principal") {
-                    CampoPremium("ID / Arete *", viewModel.idArete, { viewModel.idArete = it }, "Ej: A-102")
-                    CampoPremium("Nombre", viewModel.nombre, { viewModel.nombre = it }, "Ej: Lucero")
-                    
-                    Text("Tipo de Animal", fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-                    ExposedDropdownMenuBox(
-                        expanded = expandedTipo,
-                        onExpandedChange = { if (!viewModel.esEdicionPendiente) expandedTipo = !expandedTipo }
-                    ) {
-                        OutlinedTextField(
-                            value = viewModel.tipo, onValueChange = {}, readOnly = true,
-                            trailingIcon = { if(!viewModel.esEdicionPendiente) ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTipo) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = ColorGrisSuave,
-                                unfocusedContainerColor = ColorGrisSuave,
-                                focusedBorderColor = EmeraldPrimary,
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black
-                            ),
-                            enabled = !viewModel.esEdicionPendiente
-                        )
-                        ExposedDropdownMenu(expanded = expandedTipo, onDismissRequest = { expandedTipo = false }) {
-                            viewModel.tiposDisponibles.forEach { opcion ->
-                                DropdownMenuItem(text = { Text(opcion) }, onClick = { viewModel.tipo = opcion; expandedTipo = false })
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    CampoPremium("Raza", viewModel.raza, { viewModel.raza = it }, "Serrana")
-                }
-
-                // --- SECCIÓN 2: NACIMIENTO ---
-                CardRegistroModerno("Origen y Ubicación") {
-                    if (viewModel.esEdicionPendiente) {
-                        ItemLecturaElegante("Fecha Capturada", viewModel.fechaNacimiento, Icons.Outlined.CalendarMonth)
-                        ItemLecturaElegante("Hora de Nacimiento", viewModel.horaNacimientoRegistrada, Icons.Outlined.AccessTime)
-                        
-                        Text("Lote Destino", fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-                        SelectorLoteDropdown(viewModel.ubicacion, { viewModel.ubicacion = it }, viewModel.listaLotes)
-                    } else {
-                        CampoPremium("Fecha de Nacimiento *", viewModel.fechaNacimiento, { viewModel.fechaNacimiento = it }, "dd/mm/aaaa")
-                        
-                        Text("Ubicación / Lote", fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-                        SelectorLoteDropdown(viewModel.ubicacion, { viewModel.ubicacion = it }, viewModel.listaLotes)
-                    }
-                }
-
-                // --- SECCIÓN 3: CARACTERÍSTICAS ---
-                CardRegistroModerno("Físico y Notas") {
-                    CampoPremium("Peso Aproximado (kg) *", viewModel.peso, { viewModel.peso = it }, "Ej: 45.0", KeyboardType.Decimal)
-                    CampoPremium("Color", viewModel.color, { viewModel.color = it }, "Ej: Café con manchas")
-                    CampoPremium("Marcas", viewModel.marcas, { viewModel.marcas = it }, "Señas particulares")
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Button(
-                    onClick = { viewModel.registrarAnimal(context) },
-                    modifier = Modifier.fillMaxWidth().height(60.dp).shadow(12.dp, RoundedCornerShape(20.dp)),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
-                    enabled = !viewModel.estaCargando
-                ) {
-                    if (viewModel.estaCargando) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                    } else {
-                        Text("GUARDAR REGISTRO", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, letterSpacing = 1.sp)
-                    }
-                }
-                Spacer(modifier = Modifier.height(60.dp))
+            OutlinedButton(onClick={mostrarDialogoOpcionesFoto=true},modifier=Modifier.fillMaxWidth()){Text("Agregar o cambiar fotografía")}
+            MensajeFormulario(viewModel.mensajeError)
+            Button(onClick={viewModel.registrarAnimal(context)},enabled=!viewModel.estaCargando,modifier=Modifier.fillMaxWidth().heightIn(min=52.dp)) {
+                if(viewModel.estaCargando) CircularProgressIndicator(Modifier.size(24.dp)) else Text("Guardar animal")
             }
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
@@ -332,7 +210,7 @@ fun SelectorLoteDropdown(loteSeleccionado: String, onLoteChange: (String) -> Uni
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor().fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+            textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = ColorGrisSuave,
                 unfocusedContainerColor = ColorGrisSuave,
@@ -354,12 +232,12 @@ fun SelectorLoteDropdown(loteSeleccionado: String, onLoteChange: (String) -> Uni
 fun CardRegistroModerno(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(32.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text(text = titulo.uppercase(), color = EmeraldPrimary, fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.5.sp)
+            Text(text = titulo.uppercase(), color = EmeraldPrimary, fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.5.sp)
             Spacer(modifier = Modifier.height(20.dp))
             contenido()
         }
@@ -374,7 +252,7 @@ fun ItemLecturaElegante(label: String, value: String, icon: ImageVector) {
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(label, fontSize = 11.sp, color = Color.Gray)
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF263238))
         }
     }
@@ -386,10 +264,11 @@ fun CampoPremium(label: String, valor: String, onValueChange: (String) -> Unit, 
         Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF263238), modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
         OutlinedTextField(
             value = valor, onValueChange = onValueChange,
+            placeholder = { Text(placeholder) },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = k),
             shape = RoundedCornerShape(16.dp),
-            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+            textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = ColorGrisSuave,
                 unfocusedContainerColor = ColorGrisSuave,

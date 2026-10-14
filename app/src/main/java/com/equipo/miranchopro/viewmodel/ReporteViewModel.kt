@@ -16,13 +16,16 @@ class ReporteViewModel(private val generarReporteUseCase: GenerarReporteUseCase)
     private val _estaCargando = MutableStateFlow(false)
     val estaCargando: StateFlow<Boolean> = _estaCargando
 
+    val error = MutableStateFlow<String?>(null)
+
     fun cargarReporte() {
         viewModelScope.launch {
             _estaCargando.value = true
+            error.value = null
             try {
                 _reporte.value = generarReporteUseCase.ejecutar()
             } catch (e: Exception) {
-                // Manejar error
+                error.value = "No se pudo cargar el reporte. Inténtalo de nuevo."
             } finally {
                 _estaCargando.value = false
             }

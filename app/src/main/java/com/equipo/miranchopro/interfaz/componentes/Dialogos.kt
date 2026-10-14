@@ -23,186 +23,30 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DialogoAsignarTarea(
-    tareaExistente: Tarea? = null,
-    listaTrabajadores: List<String> = emptyList(),
-    onDismiss: () -> Unit,
-    onConfirm: (Tarea) -> Unit
-) {
-    var titulo by remember { mutableStateOf(tareaExistente?.titulo ?: "") }
-    var descripcion by remember { mutableStateOf(tareaExistente?.descripcion ?: "") }
-    var responsable by remember { mutableStateOf(tareaExistente?.responsable ?: "") }
+fun DialogoAsignarTarea(tareaExistente: Tarea? = null, listaTrabajadores: List<String> = emptyList(),
+    guardando: Boolean = false, errorOperacion: String? = null, onDismiss: () -> Unit, onConfirm: (Tarea) -> Unit) {
+    var titulo by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(tareaExistente?.titulo ?: "") }
+    var descripcion by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(tareaExistente?.descripcion ?: "") }
+    var responsable by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(tareaExistente?.responsable ?: "") }
     var prioridad by remember { mutableStateOf(tareaExistente?.prioridad ?: Prioridad.MEDIA) }
-    var fecha by remember { mutableStateOf(tareaExistente?.fecha ?: "") }
-
-    var mostrarDatePicker by remember { mutableStateOf(false) }
-    var mostrarBuscadorTrabajadores by remember { mutableStateOf(false) }
-
-    val datePickerState = rememberDatePickerState()
-    val formatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
-
-    // Validación de campos obligatorios
-    val tituloError = titulo.isBlank()
-    val descripcionError = descripcion.isBlank()
-    val responsableError = responsable.isBlank()
-    val esFormularioValido = !tituloError && !descripcionError && !responsableError
-
-    if (mostrarDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { mostrarDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        fecha = formatter.format(Date(it))
-                    }
-                    mostrarDatePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { mostrarDatePicker = false }) { Text("Cancelar") }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
-
-    if (mostrarBuscadorTrabajadores) {
-        BuscadorTrabajadoresDialog(
-            trabajadores = listaTrabajadores,
-            onDismiss = { mostrarBuscadorTrabajadores = false },
-            onSeleccionar = {
-                responsable = it
-                mostrarBuscadorTrabajadores = false
-            }
-        )
-    }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(16.dp), color = Color.White) {
-            Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        if (tareaExistente == null) "Asignar Tarea" else "Editar Tarea",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null) }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                OutlinedTextField(
-                    value = titulo,
-                    onValueChange = { titulo = it },
-                    label = { Text("Título de la tarea") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = tituloError,
-                    supportingText = { if (tituloError) Text("El título es obligatorio", color = MaterialTheme.colorScheme.error) }
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                OutlinedTextField(
-                    value = descripcion,
-                    onValueChange = { descripcion = it },
-                    label = { Text("Descripción") },
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
-                    isError = descripcionError,
-                    supportingText = { if (descripcionError) Text("La descripción es obligatoria", color = MaterialTheme.colorScheme.error) }
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(modifier = Modifier.fillMaxWidth().clickable { mostrarBuscadorTrabajadores = true }) {
-                    OutlinedTextField(
-                        value = responsable,
-                        onValueChange = {},
-                        label = { Text("Responsable") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true,
-                        enabled = false,
-                        isError = responsableError,
-                        trailingIcon = { Icon(Icons.Default.Search, null) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            disabledTextColor = Color.Black,
-                            disabledBorderColor = if (responsableError) MaterialTheme.colorScheme.error else Color.LightGray,
-                            disabledLabelColor = if (responsableError) MaterialTheme.colorScheme.error else Color.Gray,
-                            disabledTrailingIconColor = Color.Gray
-                        ),
-                        supportingText = { if (responsableError) Text("El responsable es obligatorio", color = MaterialTheme.colorScheme.error) }
-                    )
-                }
-
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(modifier = Modifier.weight(1f).clickable { 
-                        prioridad = when(prioridad) {
-                            Prioridad.BAJA -> Prioridad.MEDIA
-                            Prioridad.MEDIA -> Prioridad.ALTA
-                            Prioridad.ALTA -> Prioridad.BAJA
-                        }
-                    }) {
-                        OutlinedTextField(
-                            value = prioridad.etiqueta,
-                            onValueChange = {},
-                            label = { Text("Prioridad") },
-                            readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = false,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                disabledTextColor = Color.Black,
-                                disabledBorderColor = Color.LightGray,
-                                disabledLabelColor = Color.Gray
-                            )
-                        )
-                    }
-                    Box(modifier = Modifier.weight(1f).clickable { mostrarDatePicker = true }) {
-                        OutlinedTextField(
-                            value = fecha,
-                            onValueChange = {},
-                            label = { Text("Fecha (opcional)") },
-                            placeholder = { Text("dd/mm/aaaa") },
-                            readOnly = true,
-                            enabled = false,
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = { Icon(Icons.Default.CalendarToday, null) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                disabledTextColor = Color.Black,
-                                disabledBorderColor = Color.LightGray,
-                                disabledLabelColor = Color.Gray,
-                                disabledTrailingIconColor = Color.Gray
-                            )
-                        )
-                    }
-                }
-
-                Button(
-                    onClick = {
-                        if (esFormularioValido) {
-                            onConfirm(
-                                Tarea(
-                                    id = tareaExistente?.id ?: 0,
-                                    titulo = titulo,
-                                    descripcion = descripcion,
-                                    responsable = responsable,
-                                    prioridad = prioridad,
-                                    estaHecha = tareaExistente?.estaHecha ?: false,
-                                    fecha = fecha.ifBlank { null }
-                                )
-                            )
-                        }
-                    },
-                    enabled = esFormularioValido,
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF00897B),
-                        disabledContainerColor = Color.Gray
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) { 
-                    Text("Guardar Tarea") 
-                }
-            }
-        }
+    var fecha by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(tareaExistente?.fecha ?: "") }
+    var intento by remember { mutableStateOf(false) }
+    var calendario by remember { mutableStateOf(false) }
+    val datePickerState=rememberDatePickerState()
+    if(calendario) DatePickerDialog(onDismissRequest={calendario=false},confirmButton={TextButton(onClick={
+        datePickerState.selectedDateMillis?.let { fecha=SimpleDateFormat("dd/MM/yyyy",Locale.ROOT).apply{timeZone=TimeZone.getTimeZone("UTC")}.format(Date(it)) };calendario=false
+    }){Text("Seleccionar")}},dismissButton={TextButton(onClick={calendario=false}){Text("Cancelar")}}){ DatePicker(state=datePickerState) }
+    FormularioDialogo(if(tareaExistente==null) "Nueva tarea" else "Editar tarea",onDismiss,guardando,errorOperacion) {
+        CampoFormulario("Título *",titulo,{titulo=it},if(intento && titulo.isBlank()) "Ingresa el título" else null)
+        CampoFormulario("Descripción *",descripcion,{descripcion=it},if(intento && descripcion.isBlank()) "Describe la tarea" else null)
+        SelectorFormulario("Responsable *",responsable,listaTrabajadores.distinct(),{responsable=it},if(intento && responsable !in listaTrabajadores) "Selecciona un responsable activo" else null)
+        SelectorFormulario("Prioridad",prioridad.etiqueta,Prioridad.entries.map{it.etiqueta},{valor->prioridad=Prioridad.entries.first{it.etiqueta==valor}})
+        OutlinedButton(onClick={calendario=true},modifier=Modifier.fillMaxWidth()){Text(if(fecha.isBlank()) "Elegir fecha (opcional)" else "Fecha: $fecha")}
+        if(fecha.isNotBlank()) TextButton(onClick={fecha=""}){Text("Quitar fecha")}
+        Button(onClick={intento=true
+            if(titulo.isNotBlank() && descripcion.isNotBlank() && responsable in listaTrabajadores)
+                onConfirm(Tarea(id=tareaExistente?.id ?: 0,titulo=titulo.trim(),descripcion=descripcion.trim(),responsable=responsable,prioridad=prioridad,estaHecha=tareaExistente?.estaHecha ?: false,fecha=fecha.ifBlank{null}))
+        },enabled=!guardando,modifier=Modifier.fillMaxWidth()){Text("Guardar tarea")}
     }
 }
 
@@ -224,7 +68,7 @@ fun BuscadorTrabajadoresDialog(
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Seleccionar Responsable", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 OutlinedTextField(
                     value = filtro,
                     onValueChange = { filtro = it },
@@ -233,9 +77,9 @@ fun BuscadorTrabajadoresDialog(
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     singleLine = true
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(listaFiltrada) { trabajador ->
                         ListItem(
@@ -249,12 +93,12 @@ fun BuscadorTrabajadoresDialog(
                             Text(
                                 "No se encontraron trabajadores",
                                 modifier = Modifier.padding(16.dp),
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
-                
+
                 TextButton(
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.End)

@@ -58,7 +58,7 @@ fun ShakeOverlay(
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 3.sp
             )
-            
+
             Spacer(modifier = Modifier.height(40.dp))
 
             // Opción Nacimiento
@@ -162,14 +162,14 @@ fun ShakeActionCard(
                     )
                     Text(
                         text = subtitulo,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.weight(1f))
-                
+
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,

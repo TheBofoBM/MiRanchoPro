@@ -30,14 +30,14 @@ import androidx.compose.ui.unit.sp
 import com.equipo.miranchopro.viewmodel.PasoRecuperacion
 import com.equipo.miranchopro.viewmodel.RecuperarContrasenaViewModel
 
-private val ColorBackground  = Color(0xFFFFFFFF)
-private val ColorText        = Color(0xFF2C3E50)
-private val ColorPrimary     = Color(0xFF0E8A5A)
-private val ColorFieldBorder = Color(0xFFE0E0E0)
-private val ColorLabel       = Color(0xFF7F8C8D)
-private val ColorSubtext     = Color(0xFF95A5A6)
-private val ColorInputBg     = Color(0xFFF8F9FA)
-private val ColorPlaceholder = Color(0xFFBDC3C7)
+private val ColorBackground: Color @Composable get() = MaterialTheme.colorScheme.background
+private val ColorText: Color @Composable get() = MaterialTheme.colorScheme.onSurface
+private val ColorPrimary: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val ColorFieldBorder: Color @Composable get() = MaterialTheme.colorScheme.outline
+private val ColorLabel: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val ColorSubtext: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val ColorInputBg: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val ColorPlaceholder: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 
 @Composable
 fun RecuperarContrasenaScreen(
@@ -130,7 +130,7 @@ fun SeccionIngresarCorreo(
                 onCheckedChange = onForzarErrorChange,
                 colors = CheckboxDefaults.colors(checkedColor = ColorPrimary)
             )
-            Text("Simular Fallo de Servidor (Ex-01)", fontSize = 11.sp, color = ColorSubtext)
+            Text("Simular Fallo de Servidor (Ex-01)", fontSize = 12.sp, color = ColorSubtext)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -174,7 +174,7 @@ fun SeccionVerificarCodigo(viewModel: RecuperarContrasenaViewModel) {
         ) {
             Text("VERIFICAR", fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
-        
+
         TextButton(
             onClick = { viewModel.pasoActual = PasoRecuperacion.INGRESAR_CORREO },
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 16.dp)
@@ -261,7 +261,7 @@ fun RanchoInput(
     isPassword: Boolean = false
 ) {
     Column {
-        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorLabel, letterSpacing = 1.5.sp, modifier = Modifier.padding(bottom = 6.dp))
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorLabel, letterSpacing = 1.5.sp, modifier = Modifier.padding(bottom = 6.dp))
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,

@@ -9,32 +9,34 @@ import kotlinx.coroutines.launch
 
 class SaludViewModel(
     private val repository: SaludRepository
-) : ViewModel() {
+) : OperacionViewModel() {
+
+    val listaAnimales = repository.obtenerAnimales().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // MEDICAMENTOS
     val listaMedicamentos: StateFlow<List<Medicamento>> = repository.obtenerMedicamentos()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun agregarMedicamento(medicamento: Medicamento) {
-        viewModelScope.launch {
+        operar {
             repository.insertarMedicamento(medicamento)
         }
     }
 
     fun editarMedicamento(medicamento: Medicamento) {
-        viewModelScope.launch {
+        operar {
             repository.actualizarMedicamento(medicamento)
         }
     }
 
     fun eliminarMedicamento(medicamento: Medicamento) {
-        viewModelScope.launch {
+        operar {
             repository.eliminarMedicamento(medicamento)
         }
     }
 
     fun existeMedicamento(nombre: String, idAExcluir: String? = null): Boolean {
-        return listaMedicamentos.value.any { 
+        return listaMedicamentos.value.any {
             it.nombre.trim().equals(nombre.trim(), ignoreCase = true) && it.id != idAExcluir
         }
     }
@@ -44,7 +46,7 @@ class SaludViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun registrarVacunacion(vacunacion: Vacunacion) {
-        viewModelScope.launch {
+        operar {
             repository.registrarVacunacion(vacunacion)
         }
     }
@@ -54,19 +56,19 @@ class SaludViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun registrarEnfermedad(enfermedad: Enfermedad) {
-        viewModelScope.launch {
+        operar {
             repository.registrarEnfermedad(enfermedad)
         }
     }
 
     fun actualizarEnfermedad(enfermedad: Enfermedad) {
-        viewModelScope.launch {
+        operar {
             repository.actualizarEnfermedad(enfermedad)
         }
     }
 
     fun actualizarEstadoEnfermedad(enfermedad: Enfermedad, nuevoEstado: String) {
-        viewModelScope.launch {
+        operar {
             repository.actualizarEnfermedad(enfermedad.copy(estado = nuevoEstado))
         }
     }

@@ -11,14 +11,16 @@ class LoteRepository(private val loteDao: LoteDao) {
     }
 
     suspend fun insertarLote(lote: Lote) {
-        loteDao.insertar(lote)
+        loteDao.guardarValidado(lote)
     }
 
     suspend fun actualizarLote(lote: Lote) {
-        loteDao.actualizar(lote)
+        loteDao.guardarValidado(lote)
     }
 
     suspend fun eliminarLote(lote: Lote) {
-        loteDao.eliminar(lote)
+        loteDao.eliminarValidado(lote)
     }
+
+    suspend fun mover(origen: Lote, destino: Lote) = loteDao.moverValidado(origen.id, destino.id)
 }

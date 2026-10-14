@@ -1,53 +1,25 @@
 package com.equipo.miranchopro.viewmodel
-
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.equipo.miranchopro.modelovista.OperacionViewModel
 import com.equipo.miranchopro.data.local.dao.InsumoDao
 import com.equipo.miranchopro.data.model.Insumo
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.*
 
-class InsumoViewModel(private val insumoDao: InsumoDao) : ViewModel() {
-
-    val listaInsumos: StateFlow<List<Insumo>> = insumoDao.obtenerTodos()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    fun agregarInsumo(nombre: String, tipo: String, cantidadInicial: Double, unidad: String) {
-        viewModelScope.launch {
-            val nuevo = Insumo(
-                nombre = nombre,
-                tipo = tipo,
-                cantidad = cantidadInicial,
-                unidadMedida = unidad
-            )
-            insumoDao.insertarInsumo(nuevo)
-        }
+class InsumoViewModel(private val insumoDao: InsumoDao) : OperacionViewModel() {
+    val listaInsumos = insumoDao.obtenerTodos().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    fun agregarInsumo(nombre: String, tipo: String, cantidadInicial: Double, unidad: String) = guardar(Insumo(nombre=nombre, tipo=tipo, cantidad=cantidadInicial, unidadMedida=unidad))
+    fun guardar(insumo: Insumo) = operar {
+        require(insumo.nombre.isNotBlank() && insumo.unidadMedida.isNotBlank()) { "Nombre y unidad son obligatorios" }
+        require(insumo.cantidad.isFinite() && insumo.cantidad >= 0) { "La cantidad debe ser un número mayor o igual que cero" }
+        insumoDao.insertarInsumo(insumo.copy(nombre=insumo.nombre.trim(), unidadMedida=insumo.unidadMedida.trim()))
     }
-
-    fun registrarConsumo(insumo: Insumo, cantidadAGastar: Double) {
-        viewModelScope.launch {
-            if (insumo.cantidad >= cantidadAGastar) {
-                insumoDao.descontarStock(insumo.id, cantidadAGastar)
-            }
-        }
+    fun registrarConsumo(insumo: Insumo, cantidadAGastar: Double) = operar {
+        require(cantidadAGastar.isFinite() && cantidadAGastar > 0) { "La cantidad debe ser mayor que cero" }
+        require(insumoDao.descontarStock(insumo.id, cantidadAGastar) == 1) { "No hay existencias suficientes o el insumo ya no existe" }
     }
-
-    fun abastecerInsumo(insumo: Insumo, cantidadAñadida: Double) {
-        viewModelScope.launch {
-            val actualizado = insumo.copy(cantidad = insumo.cantidad + cantidadAñadida)
-            insumoDao.actualizarInsumo(actualizado)
-        }
+    fun abastecerInsumo(insumo: Insumo, cantidadAñadida: Double) = operar {
+        require(cantidadAñadida.isFinite() && cantidadAñadida > 0) { "La cantidad debe ser mayor que cero" }
+        require(insumoDao.sumarStock(insumo.id, cantidadAñadida) == 1) { "No se pudo actualizar la cantidad; revisa el insumo y el valor" }
     }
-
-    fun eliminarInsumo(insumo: Insumo) {
-        viewModelScope.launch {
-            insumoDao.eliminarInsumo(insumo)
-        }
-    }
+    fun eliminarInsumo(insumo: Insumo) = operar { insumoDao.eliminarInsumo(insumo) }
 }

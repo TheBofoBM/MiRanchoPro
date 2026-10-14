@@ -23,13 +23,14 @@ class GenerarReporteUseCase(private val repository: AnimalRepository) {
 
     suspend fun ejecutar(): ReporteInventario {
         // Obtenemos la lista unificada de la base de datos
-        val listaAnimales = repository.obtenerTodos().first()
+        val listaAnimales = repository.obtenerTodos().first().filter { it.estado !in listOf("Baja", "Pendiente") }
         
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         val fechaHoy = sdf.format(Date())
 
-        val pesoTotal = listaAnimales.sumOf { it.peso }
-        val promedio = if (listaAnimales.isNotEmpty()) pesoTotal / listaAnimales.size else 0.0
+        val pesos = listaAnimales.map { it.peso }.filter { it.isFinite() && it > 0 }
+        val pesoTotal = pesos.sum()
+        val promedio = if (pesos.isNotEmpty()) pesoTotal / pesos.size else 0.0
 
         return ReporteInventario(
             fechaGeneracion = fechaHoy,

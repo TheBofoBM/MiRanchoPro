@@ -32,14 +32,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.equipo.miranchopro.viewmodel.RegistroViewModel
 
 // Colores consistentes con el Wireframe
-private val ColorBackground  = Color(0xFFFFFFFF)
-private val ColorText        = Color(0xFF2C3E50)
-private val ColorPrimary     = Color(0xFF0E8A5A)
-private val ColorFieldBorder = Color(0xFFE0E0E0)
-private val ColorLabel       = Color(0xFF7F8C8D)
-private val ColorSubtext     = Color(0xFF95A5A6)
-private val ColorInputBg     = Color(0xFFF8F9FA)
-private val ColorPlaceholder = Color(0xFFBDC3C7)
+private val ColorBackground: Color @Composable get() = MaterialTheme.colorScheme.background
+private val ColorText: Color @Composable get() = MaterialTheme.colorScheme.onSurface
+private val ColorPrimary: Color @Composable get() = MaterialTheme.colorScheme.primary
+private val ColorFieldBorder: Color @Composable get() = MaterialTheme.colorScheme.outline
+private val ColorLabel: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val ColorSubtext: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+private val ColorInputBg: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+private val ColorPlaceholder: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 
 @Composable
 fun RegistroScreen(
@@ -55,13 +55,6 @@ fun RegistroScreen(
         if (viewModel.registroExitoso) {
             Toast.makeText(context, "Perfil de Administrador creado", Toast.LENGTH_SHORT).show()
             onRegistroExitoso()
-        }
-    }
-
-    LaunchedEffect(viewModel.mensajeError) {
-        viewModel.mensajeError?.let {
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            viewModel.limpiarMensaje()
         }
     }
 
@@ -106,7 +99,7 @@ fun RegistroScreen(
                 keyboardType = KeyboardType.Password,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = ColorLabel, modifier = Modifier.size(16.dp)) },
-                trailingIcon = { Text(if (passwordVisible) "Ocultar" else "Ver", color = ColorPrimary, fontSize = 12.sp, modifier = Modifier.clickable { passwordVisible = !passwordVisible }) }
+                trailingIcon = { TextButton(onClick={passwordVisible=!passwordVisible}){Text(if(passwordVisible) "Ocultar contraseña" else "Mostrar contraseña")} }
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -121,20 +114,12 @@ fun RegistroScreen(
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = ColorLabel, modifier = Modifier.size(16.dp)) }
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                Checkbox(
-                    checked = forzarErrorBD,
-                    onCheckedChange = { forzarErrorBD = it },
-                    colors = CheckboxDefaults.colors(checkedColor = ColorPrimary, uncheckedColor = ColorSubtext),
-                    modifier = Modifier.scale(0.8f)
-                )
-                Text("Simular Error de BD (CP-02.3)", fontSize = 11.sp, color = ColorSubtext)
-            }
-
+            com.equipo.miranchopro.interfaz.componentes.MensajeFormulario(viewModel.mensajeError)
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { viewModel.registrarUsuario(forzarErrorBD) },
+                onClick = { viewModel.registrarUsuario(false) },
+                enabled = !viewModel.estaCargando,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = ColorPrimary, contentColor = Color.White)
@@ -160,7 +145,7 @@ private fun RanchoLogo() {
             Text("🌱", fontSize = 20.sp)
         }
         Spacer(modifier = Modifier.width(10.dp))
-        Text(buildAnnotatedString { append("Rancho "); pushStyle(androidx.compose.ui.text.SpanStyle(color = ColorPrimary)); append("Ganado"); pop() }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ColorText)
+        Text(buildAnnotatedString { append("Mi Rancho "); pushStyle(androidx.compose.ui.text.SpanStyle(color = ColorPrimary)); append("PRO"); pop() }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ColorText)
     }
 }
 
@@ -168,7 +153,7 @@ private fun RanchoLogo() {
 @Composable
 private fun RanchoInputField(label: String, value: String, onValueChange: (String) -> Unit, placeholder: String, keyboardType: KeyboardType = KeyboardType.Text, visualTransformation: VisualTransformation = VisualTransformation.None, leadingIcon: @Composable (() -> Unit)? = null, trailingIcon: @Composable (() -> Unit)? = null) {
     Column {
-        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ColorLabel, letterSpacing = 1.5.sp, modifier = Modifier.padding(bottom = 6.dp))
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ColorLabel, letterSpacing = 1.5.sp, modifier = Modifier.padding(bottom = 6.dp))
         OutlinedTextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth(), placeholder = { Text(placeholder, color = ColorPlaceholder, fontSize = 14.sp) }, visualTransformation = visualTransformation, keyboardOptions = KeyboardOptions(keyboardType = keyboardType), singleLine = true, leadingIcon = leadingIcon, trailingIcon = trailingIcon, shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = ColorInputBg, unfocusedContainerColor = ColorInputBg, focusedBorderColor = ColorPrimary, unfocusedBorderColor = ColorFieldBorder, focusedTextColor = ColorText, unfocusedTextColor = ColorText, cursorColor = ColorPrimary))
     }
 }

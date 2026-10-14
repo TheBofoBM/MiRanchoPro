@@ -17,7 +17,7 @@ class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
         private set
     var loginExitoso by mutableStateOf(false)
         private set
-        
+
     var estaCargando by mutableStateOf(false)
         private set
 
@@ -27,6 +27,7 @@ class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
     fun limpiarMensaje() { mensajeError = null }
 
     fun iniciarSesion(simularErrorConexion: Boolean) {
+        if (estaCargando) return
         if (simularErrorConexion) {
             mensajeError = "Sin conexión al servidor"
             return
@@ -40,7 +41,7 @@ class LoginViewModel(private val usuarioDao: UsuarioDao) : ViewModel() {
         estaCargando = true
         viewModelScope.launch {
             try {
-                val usuario = usuarioDao.iniciarSesion(correo.trim(), contrasena)
+                val usuario = usuarioDao.iniciarSesion(com.equipo.miranchopro.utils.Validaciones.correo(correo), contrasena)
                 if (usuario != null) {
                     usuarioLogueado = usuario
                     loginExitoso = true

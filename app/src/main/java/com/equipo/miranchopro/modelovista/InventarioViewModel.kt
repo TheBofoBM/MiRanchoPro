@@ -31,7 +31,7 @@ class InventarioViewModel(
     var vistaActual by mutableStateOf(VistaInventario.CATEGORIAS)
     var categoriaSeleccionada by mutableStateOf<String?>(null)
 
-    val tiposFijos = listOf("Vaca", "Toro", "Becerro", "Novillo", "Vaquilla")
+    val tiposFijos = listOf("Vaca", "Toro", "Becerro", "Becerra", "Novillo", "Vaquilla")
 
     init {
         observarAnimales()
@@ -41,7 +41,7 @@ class InventarioViewModel(
         viewModelScope.launch {
             estaCargando = true
             repositorio.obtenerTodos().collect { lista ->
-                listaAnimales = lista
+                listaAnimales = lista.map { it.copy(edad = com.equipo.miranchopro.utils.Validaciones.edad(it.fechaNacimiento)) }
                 estaCargando = false
             }
         }
@@ -53,7 +53,7 @@ class InventarioViewModel(
                 .filter { it.estado != "Baja" && it.estado != "Pendiente" }
                 .groupBy { it.tipo }
                 .mapValues { it.value.size }
-            
+
             return tiposFijos.map { tipo ->
                 tipo to (mapaConteo[tipo] ?: 0)
             }
@@ -70,7 +70,7 @@ class InventarioViewModel(
                 VistaInventario.DETALLE_CATEGORIA -> listaAnimales.filter { it.tipo == categoriaSeleccionada && it.estado != "Baja" && it.estado != "Pendiente" }
                 else -> listaAnimales.filter { it.estado != "Baja" && it.estado != "Pendiente" }
             }
-            
+
             return if (busqueda.isBlank()) {
                 base
             } else {

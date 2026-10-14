@@ -1,5 +1,6 @@
 package com.equipo.miranchopro.interfaz.pantallas.trabajadores
 
+import com.equipo.miranchopro.interfaz.componentes.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,10 +34,15 @@ fun PantallaTrabajadores(
     var trabajadorAEditar by remember { mutableStateOf<Usuario?>(null) }
     var menuExpandido by remember { mutableStateOf(false) }
 
+    LaunchedEffect(mostrarDialogo) { viewModel.limpiarError() }
+    LaunchedEffect(viewModel.versionGuardado) { if(viewModel.versionGuardado>0) {mostrarDialogo=false;trabajadorAEditar=null} }
+    var empleadoAEliminar by remember { mutableStateOf<Usuario?>(null) }
+    empleadoAEliminar?.let { empleado -> ConfirmarEliminacion(empleado.correo,{empleadoAEliminar=null},{viewModel.darDeBajaTrabajador(empleado);empleadoAEliminar=null}) }
     if (mostrarDialogo) {
         DialogoTrabajador(
+            guardando=viewModel.guardando,errorOperacion=viewModel.errorOperacion,
             trabajadorExistente = trabajadorAEditar,
-            onDismiss = { 
+            onDismiss = {
                 mostrarDialogo = false
                 trabajadorAEditar = null
             },
@@ -46,18 +52,17 @@ fun PantallaTrabajadores(
                 } else {
                     viewModel.agregarTrabajador(correo, contrasena)
                 }
-                mostrarDialogo = false
-                trabajadorAEditar = null
             }
         )
     }
 
     Scaffold(
+        snackbarHost = { MensajeFormulario(viewModel.errorOperacion) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { 
+                onClick = {
                     trabajadorAEditar = null
-                    mostrarDialogo = true 
+                    mostrarDialogo = true
                 },
                 containerColor = Color(0xFF008577),
                 contentColor = Color.White,
@@ -71,11 +76,11 @@ fun PantallaTrabajadores(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
+                .background(MaterialTheme.colorScheme.background)
                 .padding(bottom = padding.calculateBottomPadding())
         ) {
             Surface(
-                color = Color.Black,
+                color = Color(0xFF004D40),
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -113,7 +118,7 @@ fun PantallaTrabajadores(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Perfil") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Perfil.ruta)
                                 },
@@ -121,7 +126,7 @@ fun PantallaTrabajadores(
                             )
                             DropdownMenuItem(
                                 text = { Text("Configuración") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Configuracion.ruta)
                                 },
@@ -130,7 +135,7 @@ fun PantallaTrabajadores(
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Cerrar sesión") },
-                                onClick = { 
+                                onClick = {
                                     menuExpandido = false
                                     navController.navigate(Pantalla.Login.ruta) {
                                         popUpTo(0)
@@ -155,7 +160,7 @@ fun PantallaTrabajadores(
                         text = "PERSONAL DEL RANCHO",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 2.sp
                     )
                 }
@@ -163,7 +168,7 @@ fun PantallaTrabajadores(
                 if (trabajadores.isEmpty()) {
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                            Text("No hay trabajadores registrados", color = Color.Gray)
+                            Text("No hay trabajadores registrados", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 } else {
@@ -174,7 +179,7 @@ fun PantallaTrabajadores(
                                 trabajadorAEditar = trabajador
                                 mostrarDialogo = true
                             },
-                            onDelete = { viewModel.darDeBajaTrabajador(trabajador) }
+                            onDelete = { empleadoAEliminar = trabajador }
                         )
                     }
                 }
@@ -192,7 +197,7 @@ fun TarjetaTrabajadorLujo(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -209,20 +214,20 @@ fun TarjetaTrabajadorLujo(
             ) {
                 Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF008577), modifier = Modifier.size(28.dp))
             }
-            
+
             Spacer(modifier = Modifier.width(20.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = trabajador.correo,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = trabajador.rol,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
