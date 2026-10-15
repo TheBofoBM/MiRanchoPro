@@ -215,7 +215,7 @@ fun PantallaEditarAnimal(
     }
 
     Scaffold(
-        containerColor = Color(0xFFFBFBFB),
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
@@ -338,8 +338,8 @@ fun PantallaEditarAnimal(
 
             // --- SECCIÓN: DATOS EDITABLES ---
             CardSeccionEditar("Características y Fechas") {
-                CampoFormulario("Nacimiento (opcional)",viewModel.fechaNacimiento,{viewModel.fechaNacimiento=it},viewModel.erroresCampos["fecha"],"dd/mm/aaaa")
-                CampoFormulario("Peso en kg *",viewModel.peso,{viewModel.peso=it},viewModel.erroresCampos["peso"],"Ej. 45,5",KeyboardType.Decimal)
+                CampoFormulario("Nacimiento (opcional)",viewModel.fechaNacimiento,{viewModel.fechaNacimiento=it},viewModel.erroresCampos["fecha"],"dd/mm/aaaa",icono=Icons.Outlined.CalendarMonth)
+                CampoFormulario("Peso en kg *",viewModel.peso,{viewModel.peso=it},viewModel.erroresCampos["peso"],"Ej. 45,5",KeyboardType.Decimal,icono=Icons.Outlined.MonitorWeight)
                 CampoEditable("Color", viewModel.color, { viewModel.color = it })
                 CampoEditable("Marcas / Señas", viewModel.marcas, { viewModel.marcas = it })
                 CampoEditable("Características / Notas", viewModel.caracteristica, { viewModel.caracteristica = it })

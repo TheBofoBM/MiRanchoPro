@@ -12,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -71,7 +73,7 @@ fun FormularioDialogo(titulo: String, onDismiss: () -> Unit, guardando: Boolean 
 }
 
 @Composable
-fun CampoFormulario(etiqueta: String, valor: String, cambiar: (String) -> Unit, error: String? = null, ejemplo: String = "", teclado: KeyboardType = KeyboardType.Text, enabled: Boolean = true, transformacion: VisualTransformation = VisualTransformation.None, enfocar: Boolean = false) {
+fun CampoFormulario(etiqueta: String, valor: String, cambiar: (String) -> Unit, error: String? = null, ejemplo: String = "", teclado: KeyboardType = KeyboardType.Text, enabled: Boolean = true, transformacion: VisualTransformation = VisualTransformation.None, enfocar: Boolean = false, icono: ImageVector? = null) {
     val context=LocalContext.current
     val clave=LocalFormularioBorrador.current?.takeIf { transformacion==VisualTransformation.None && teclado!=KeyboardType.Password }?.plus(etiqueta)
     LaunchedEffect(clave) { clave?.let { Borradores.leer(context,it)?.let(cambiar) } }
@@ -79,13 +81,15 @@ fun CampoFormulario(etiqueta: String, valor: String, cambiar: (String) -> Unit, 
     LaunchedEffect(enfocar, error) { if (enfocar && error != null) foco.requestFocus() }
     OutlinedTextField(value = valor, onValueChange = { clave?.let { c -> Borradores.guardar(context,c,it) };cambiar(it) }, label = { Text(etiqueta) }, placeholder = { Text(ejemplo) },
         isError = error != null, supportingText = if (error != null) {{ Text(error) }} else null,
+        leadingIcon = icono?.let { { Icon(it, contentDescription = null, tint = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) } },
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth().focusRequester(foco), singleLine = true, enabled = enabled,
         keyboardOptions = KeyboardOptions(keyboardType = teclado), visualTransformation = transformacion)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SelectorFormulario(etiqueta: String, valor: String, opciones: List<String>, cambiar: (String) -> Unit, error: String? = null) {
+fun SelectorFormulario(etiqueta: String, valor: String, opciones: List<String>, cambiar: (String) -> Unit, error: String? = null, icono: ImageVector? = null) {
     val context=LocalContext.current
     val clave=LocalFormularioBorrador.current?.plus(etiqueta)
     LaunchedEffect(clave,opciones) { clave?.let { Borradores.leer(context,it)?.takeIf { v -> v in opciones }?.let(cambiar) } }
@@ -93,6 +97,8 @@ fun SelectorFormulario(etiqueta: String, valor: String, opciones: List<String>, 
     ExposedDropdownMenuBox(expanded = expandido, onExpandedChange = { expandido = !expandido }) {
         OutlinedTextField(value = valor, onValueChange = {}, readOnly = true, label = { Text(etiqueta) }, isError = error != null,
             supportingText = if (error != null) {{ Text(error) }} else null,
+            leadingIcon = icono?.let { { Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.primary) } },
+            shape = RoundedCornerShape(16.dp),
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandido) }, modifier = Modifier.menuAnchor().fillMaxWidth())
         ExposedDropdownMenu(expanded = expandido, onDismissRequest = { expandido = false }) {
             opciones.forEach { opcion -> DropdownMenuItem(text = { Text(opcion) }, onClick = { clave?.let { Borradores.guardar(context,it,opcion) };cambiar(opcion); expandido = false }) }

@@ -16,6 +16,9 @@ import com.equipo.miranchopro.data.model.*
 import com.equipo.miranchopro.interfaz.componentes.*
 import com.equipo.miranchopro.interfaz.pantallas.inventario.*
 import com.equipo.miranchopro.modelovista.PanelRanchoViewModel
+import com.equipo.miranchopro.modelovista.RegistrarAnimalViewModel
+import com.equipo.miranchopro.data.repository.AnimalRepository
+import com.equipo.miranchopro.data.repository.LoteRepository
 import com.equipo.miranchopro.utils.Validaciones
 import com.equipo.miranchopro.interfaz.tema.TemaMiRanchoPro
 import com.equipo.miranchopro.interfaz.pantallas.inicio.PrioridadesInicio
@@ -36,11 +39,13 @@ class FlujosPrioridadesTest {
     private val contexto=ApplicationProvider.getApplicationContext<Context>()
     private lateinit var db: RanchoDatabase
     private var panel: PanelRanchoViewModel?=null
+    private var registro: RegistrarAnimalViewModel?=null
     @Before fun abrir()=runBlocking {
+        Borradores.borrar(contexto,"prueba-ui")
         db=Room.inMemoryDatabaseBuilder(contexto,RanchoDatabase::class.java).build()
         db.animalDao().insertar(Animal(idArete="UI-001",nombre="Luna",tipo="Vaca",peso=400.0,fechaNacimiento=Validaciones.fecha("01/01/2020")))
     }
-    @After fun cerrar() { panel?.viewModelScope?.cancel();db.close();Borradores.borrar(contexto,"prueba-ui") }
+    @After fun cerrar() { panel?.viewModelScope?.cancel();registro?.viewModelScope?.cancel();db.close();Borradores.borrar(contexto,"prueba-ui") }
     @Test fun fichaPermiteRegistrarPesajeYLoMuestraEnHistorial() {
         val vm=PanelRanchoViewModel(db) { "dueño-prueba" }
         panel=vm
@@ -48,6 +53,7 @@ class FlujosPrioridadesTest {
         compose.waitUntil(10000) { vm.animales.value.isNotEmpty() }
         compose.onNodeWithText("Registrar pesaje").performScrollTo().performClick()
         compose.onNodeWithText("Peso (kg)").performTextInput("450")
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.onNodeWithText("Guardar pesaje").performScrollTo().performClick()
         compose.waitUntil(10000) { vm.pesajes.value.any { it.peso==450.0 } }
         compose.waitUntil(10000) { compose.onAllNodesWithText("Guardar pesaje").fetchSemanticsNodes().isEmpty() }
@@ -65,10 +71,10 @@ class FlujosPrioridadesTest {
         panel=vm
         compose.setContent { TemaMiRanchoPro(oscuro=true) { PantallaGanado(rememberNavController(),vm) } }
         compose.waitUntil(10000) { vm.animales.value.isNotEmpty() }
-        compose.onNodeWithText("Buscar arete, nombre o raza").performTextInput("Luna")
+        compose.onNodeWithText("Buscar ganado").performTextInput("Luna")
         compose.onNodeWithText("#UI-001").assertIsDisplayed()
         capturar("ganado-busqueda-oscuro.png")
-        compose.onNodeWithText("Buscar arete, nombre o raza").performTextReplacement("inexistente")
+        compose.onNodeWithText("Buscar ganado").performTextReplacement("inexistente")
         compose.onNodeWithText("Sin coincidencias").assertIsDisplayed()
     }
     @Test fun nacimientosRapidosSePuedenEncontrarYCancelar() {
@@ -76,11 +82,75 @@ class FlujosPrioridadesTest {
         val vm=PanelRanchoViewModel(db) { "dueño-prueba" };panel=vm
         compose.setContent { TemaMiRanchoPro(oscuro=true) { PantallaGanado(rememberNavController(),vm) } }
         compose.waitUntil(10000) { vm.animales.value.size==2 }
-        compose.onNodeWithText("Nacimientos por completar: 1").performClick()
+        compose.onNodeWithText("Nacimientos pendientes").performScrollTo().performClick()
         compose.onNodeWithText("Cancelar registro temporal").performScrollTo().performClick()
         compose.onNodeWithText("Eliminar").performClick()
         compose.waitUntil(10000) { vm.animales.value.none { it.estado=="Pendiente" } }
         assertTrue(vm.animales.value.any { it.idArete=="UI-001" })
+    }
+    @Test fun categoriasSeparanActivosDePendientesYBajas() {
+        runBlocking {
+            db.animalDao().insertar(Animal(idArete="UI-TORO",tipo="Toro",peso=600.0))
+            db.animalDao().insertar(Animal(idArete="UI-BAJA",tipo="Vaca",peso=400.0,estado="Baja"))
+            db.animalDao().insertar(Animal(idArete="TEMP-visual",tipo="Becerro",peso=0.0,estado="Pendiente",horaNacimiento="08:15:00"))
+        }
+        val vm=PanelRanchoViewModel(db) { "dueño-prueba" };panel=vm
+        var oscuro by mutableStateOf(true)
+        compose.setContent { TemaMiRanchoPro(oscuro=oscuro) { PantallaGanado(rememberNavController(),vm) } }
+        compose.waitUntil(10000) { vm.animales.value.size==4 }
+        compose.onNodeWithText("2 animales activos en tu rancho").assertExists()
+        capturarEn("capturas-avance04","ganado-secciones-oscuro.png")
+        compose.runOnIdle { oscuro=false }
+        capturarEn("capturas-avance04","ganado-secciones-claro.png")
+        compose.runOnIdle { oscuro=true }
+        compose.onNodeWithTag("contenido-ganado").performScrollToNode(hasText("Vacas"))
+        compose.onNodeWithText("Vacas").performClick()
+        compose.onNodeWithTag("contenido-ganado").performScrollToNode(hasText("#UI-001"))
+        compose.onNodeWithText("#UI-001").assertIsDisplayed()
+        compose.onNodeWithText("#UI-TORO").assertDoesNotExist()
+        compose.onNodeWithText("#UI-BAJA").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Volver a secciones").performClick()
+        compose.onNodeWithTag("contenido-ganado").performScrollToNode(hasText("Toros"))
+        compose.onNodeWithText("Toros").performClick()
+        compose.onNodeWithText("Toros").assertIsDisplayed()
+        compose.onNodeWithTag("contenido-ganado").performScrollToNode(hasText("#UI-TORO"))
+        compose.onNodeWithText("#UI-TORO").assertIsDisplayed()
+        compose.onNodeWithText("#UI-001").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Volver a secciones").performClick()
+        compose.onNodeWithTag("contenido-ganado").performScrollToIndex(0)
+        compose.onNodeWithText("Nacimientos pendientes").performScrollTo().performClick()
+        compose.onNodeWithText("Registrado a las 08:15:00").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("contenido-ganado").performScrollToIndex(2)
+        capturarEn("capturas-avance04","registro-pendiente-oscuro.png")
+        compose.onNodeWithText("Completar registro").assertExists()
+        compose.onNodeWithText("Cancelar registro temporal").assertExists()
+    }
+    @Test fun formularioVisualGuardaSinInventarFechaDeNacimiento() {
+        val vm=RegistrarAnimalViewModel(AnimalRepository(db.animalDao(),db.embarazoDao()),LoteRepository(db.loteDao()))
+        registro=vm
+        var oscuro by mutableStateOf(true)
+        var finalizado=false
+        compose.setContent { TemaMiRanchoPro(oscuro=oscuro) {
+            CompositionLocalProvider(LocalRutaBorrador provides "prueba-ui-registro-visual") {
+                PantallaRegistrarAnimal(vm) { finalizado=true }
+            }
+        } }
+        compose.onNodeWithText("Identificación visual").assertIsDisplayed()
+        capturarEn("capturas-avance04","registro-foto-oscuro.png")
+        compose.onNodeWithText("Arete *").performScrollTo().performTextInput("UI-NUEVO")
+        compose.onNodeWithText("Nacimiento (opcional)").performScrollTo().assertIsDisplayed()
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        capturarEn("capturas-avance04","registro-fecha-oscuro.png")
+        compose.runOnIdle { oscuro=false }
+        capturarEn("capturas-avance04","registro-fecha-claro.png")
+        compose.onNodeWithText("Peso en kg *").performScrollTo().performTextInput("45,5")
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.onNodeWithText("Guardar animal").performScrollTo().performClick()
+        compose.waitUntil(10000) { runBlocking { db.animalDao().obtenerPorId("UI-NUEVO")!=null } }
+        val animal=runBlocking { db.animalDao().obtenerPorId("UI-NUEVO")!! }
+        assertEquals(45.5,animal.peso,0.0)
+        assertNull(animal.fechaNacimiento)
+        compose.waitUntil(10000) { finalizado }
     }
     @Test fun borradorVuelveAlReabrirFormularioSinGuardarContrasena() {
         var visible by mutableStateOf(true)
@@ -134,9 +204,12 @@ class FlujosPrioridadesTest {
         capturar("estadisticas-claro.png")
     }
     private fun capturar(nombre: String) {
+        capturarEn("capturas-avance03",nombre)
+    }
+    private fun capturarEn(directorio: String,nombre: String) {
         compose.waitForIdle()
         androidx.test.espresso.Espresso.closeSoftKeyboard()
-        val carpeta=File(contexto.getExternalFilesDir(null),"capturas-avance03").apply { mkdirs() }
+        val carpeta=File(contexto.getExternalFilesDir(null),directorio).apply { mkdirs() }
         val bitmap=InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot() ?: error("No se pudo capturar la pantalla")
         try { File(carpeta,nombre).outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it) } } finally { bitmap.recycle() }
     }

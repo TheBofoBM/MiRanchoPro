@@ -6,6 +6,14 @@ Objetivo: publicar una aplicación Android útil y estable en Google Play, con u
 
 Este documento conserva la planificación original. El usuario autorizó comenzar la implementación el 14 de octubre de 2026. Las casillas no reflejan todos los avances posteriores: consulta [validaciones y tema](docs/AVANCE_02_VALIDACIONES_Y_TEMA.md) y [operación del rancho, respaldos e historiales](docs/AVANCE_03_OPERACION_DEL_RANCHO.md) para conocer el estado actual. Los límites comerciales aún son propuestas. No es necesario completar todas las ampliaciones antes de la primera publicación.
 
+## Prioridad actual acordada — 14 de octubre de 2026
+
+El propietario decidió dejar para después, sin cancelar, las cuentas en línea, sincronización entre celulares, colaboración con empleados, planes Gratis/Pro, cobros y preparación de publicación en Play Store. Se retomarán tras las mejoras actuales de apariencia y uso. Los límites siguen pendientes: la idea del propietario es evaluar Gratis para el dueño y otros dos dispositivos y Pro para una cantidad mayor con un límite por definir; no se ha aprobado otro reparto.
+
+La prioridad actual es recuperar las secciones visuales de Ganado (vacas, toros, becerros, becerras, novillos y vaquillas), la tarjeta destacada de nacimientos pendientes y los formularios agrupados con iconos, conservando las validaciones, borradores y contraste de los temas claro y oscuro.
+
+La implementación y las capturas de esta etapa se describen en [secciones y presentación del registro](docs/AVANCE_04_SECCIONES_Y_REGISTRO.md).
+
 ## Avance del primer bloque — 14 de octubre de 2026
 
 - Compilación debug y APK de pruebas correctos, con Room 2.8.5, Kotlin 2.2.10 y KSP 2.2.10-2.0.2.
@@ -20,7 +28,7 @@ Este documento conserva la planificación original. El usuario autorizó comenza
 ## 0. Decisiones del producto
 
 - [ ] D01. Confirmar el alcance de la primera publicación: funciones individuales completas y, si Pro se ofrece desde el lanzamiento, colaboración y cobro completamente funcionales.
-- [ ] D02. Confirmar los límites de Gratis y Pro. Propuesta inicial, todavía sin aprobar: Gratis para un dueño en un teléfono; Pro para un dueño y hasta cuatro empleados, con hasta dos dispositivos por persona.
+- [ ] D02. Confirmar los límites de Gratis y Pro. Idea del propietario, todavía sin cerrar: Gratis para el dueño y otros dos dispositivos; Pro para más dispositivos con un límite por definir. Distinguir el número de personas del número de dispositivos.
 - [ ] D03. Confirmar qué funciones pertenecen a cada plan: registro básico, reproducción, recordatorios, estadísticas, exportación, respaldo y colaboración.
 - [ ] D04. Definir precio, periodicidad y posible prueba de Pro después de estimar costos de almacenamiento, sincronización, soporte y comisiones aplicables.
 - [ ] D05. Decidir si Gratis podrá utilizarse completamente sin cuenta en línea y cómo se trasladarán sus datos al activar Pro.
