@@ -4,7 +4,7 @@ import com.equipo.miranchopro.data.local.dao.LoteDao
 import com.equipo.miranchopro.data.model.Lote
 import kotlinx.coroutines.flow.Flow
 
-class LoteRepository(private val loteDao: LoteDao) {
+class LoteRepository(private val loteDao: LoteDao, private val responsable: () -> String = { "" }) {
 
     fun obtenerTodosLosLotes(): Flow<List<Lote>> {
         return loteDao.obtenerTodosLosLotes()
@@ -22,5 +22,5 @@ class LoteRepository(private val loteDao: LoteDao) {
         loteDao.eliminarValidado(lote)
     }
 
-    suspend fun mover(origen: Lote, destino: Lote) = loteDao.moverValidado(origen.id, destino.id)
+    suspend fun mover(origen: Lote, destino: Lote) = loteDao.moverValidado(origen.id, destino.id, responsable())
 }

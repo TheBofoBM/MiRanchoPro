@@ -1,0 +1,854 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 13,
+    "identityHash": "805e8400d4ee0ff7cb30c0846f7b0d42",
+    "entities": [
+      {
+        "tableName": "usuarios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`correo` TEXT NOT NULL, `contrasena` TEXT NOT NULL, `rol` TEXT NOT NULL, PRIMARY KEY(`correo`))",
+        "fields": [
+          {
+            "fieldPath": "correo",
+            "columnName": "correo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contrasena",
+            "columnName": "contrasena",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rol",
+            "columnName": "rol",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "correo"
+          ]
+        }
+      },
+      {
+        "tableName": "lotes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nombre` TEXT NOT NULL, `capacidadMaxima` INTEGER NOT NULL, `ocupacionActual` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacidadMaxima",
+            "columnName": "capacidadMaxima",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ocupacionActual",
+            "columnName": "ocupacionActual",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "animales",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idArete` TEXT NOT NULL, `nombre` TEXT NOT NULL, `tipo` TEXT NOT NULL, `raza` TEXT NOT NULL, `edad` TEXT NOT NULL, `peso` REAL NOT NULL, `caracteristica` TEXT NOT NULL, `origen` TEXT NOT NULL, `color` TEXT NOT NULL, `marcas` TEXT NOT NULL, `ubicacion` TEXT NOT NULL, `estado` TEXT NOT NULL, `fechaRegistro` INTEGER NOT NULL, `fechaNacimiento` INTEGER, `horaNacimiento` TEXT, `fotoPath` TEXT, `madreId` TEXT, `partoId` TEXT, `fechaBaja` INTEGER, `motivoBaja` TEXT, PRIMARY KEY(`idArete`))",
+        "fields": [
+          {
+            "fieldPath": "idArete",
+            "columnName": "idArete",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "raza",
+            "columnName": "raza",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "edad",
+            "columnName": "edad",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "peso",
+            "columnName": "peso",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "caracteristica",
+            "columnName": "caracteristica",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "origen",
+            "columnName": "origen",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "marcas",
+            "columnName": "marcas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ubicacion",
+            "columnName": "ubicacion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaRegistro",
+            "columnName": "fechaRegistro",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaNacimiento",
+            "columnName": "fechaNacimiento",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "horaNacimiento",
+            "columnName": "horaNacimiento",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fotoPath",
+            "columnName": "fotoPath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "madreId",
+            "columnName": "madreId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "partoId",
+            "columnName": "partoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaBaja",
+            "columnName": "fechaBaja",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "motivoBaja",
+            "columnName": "motivoBaja",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "idArete"
+          ]
+        }
+      },
+      {
+        "tableName": "insumos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `tipo` TEXT NOT NULL, `cantidad` REAL NOT NULL, `unidadMedida` TEXT NOT NULL, `stockMinimo` REAL NOT NULL, `fechaCaducidad` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidad",
+            "columnName": "cantidad",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unidadMedida",
+            "columnName": "unidadMedida",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockMinimo",
+            "columnName": "stockMinimo",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaCaducidad",
+            "columnName": "fechaCaducidad",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "medicamentos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `dosis` TEXT NOT NULL, `stock` INTEGER NOT NULL, `unidadMedida` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `stockMinimo` INTEGER NOT NULL DEFAULT 5, `fechaCaducidad` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dosis",
+            "columnName": "dosis",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stock",
+            "columnName": "stock",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unidadMedida",
+            "columnName": "unidadMedida",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockMinimo",
+            "columnName": "stockMinimo",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "5"
+          },
+          {
+            "fieldPath": "fechaCaducidad",
+            "columnName": "fechaCaducidad",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "vacunaciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombreVacuna` TEXT NOT NULL, `dosis` TEXT NOT NULL, `fechaAplicacion` TEXT NOT NULL, `idAnimal` TEXT NOT NULL, `proximaDosis` TEXT, `notas` TEXT NOT NULL, `recordatorioCompletado` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreVacuna",
+            "columnName": "nombreVacuna",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dosis",
+            "columnName": "dosis",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaAplicacion",
+            "columnName": "fechaAplicacion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idAnimal",
+            "columnName": "idAnimal",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "proximaDosis",
+            "columnName": "proximaDosis",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordatorioCompletado",
+            "columnName": "recordatorioCompletado",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "enfermedades",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `sintomas` TEXT NOT NULL, `tratamiento` TEXT NOT NULL, `idAnimal` TEXT NOT NULL, `fechaDeteccion` TEXT NOT NULL, `estado` TEXT NOT NULL, `notas` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sintomas",
+            "columnName": "sintomas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tratamiento",
+            "columnName": "tratamiento",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idAnimal",
+            "columnName": "idAnimal",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaDeteccion",
+            "columnName": "fechaDeteccion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "tareas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `titulo` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `responsable` TEXT NOT NULL, `prioridad` TEXT NOT NULL, `estaHecha` INTEGER NOT NULL, `fecha` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "titulo",
+            "columnName": "titulo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "responsable",
+            "columnName": "responsable",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "prioridad",
+            "columnName": "prioridad",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estaHecha",
+            "columnName": "estaHecha",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "embarazos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vacaId` TEXT NOT NULL, `fechaInseminacion` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `fechaProbableParto` INTEGER NOT NULL, `estado` TEXT NOT NULL, `notas` TEXT NOT NULL, FOREIGN KEY(`vacaId`) REFERENCES `animales`(`idArete`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vacaId",
+            "columnName": "vacaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaInseminacion",
+            "columnName": "fechaInseminacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaProbableParto",
+            "columnName": "fechaProbableParto",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_embarazos_vacaId",
+            "unique": false,
+            "columnNames": [
+              "vacaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_embarazos_vacaId` ON `${TABLE_NAME}` (`vacaId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "animales",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "vacaId"
+            ],
+            "referencedColumns": [
+              "idArete"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "pesajes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `animalId` TEXT NOT NULL, `fecha` INTEGER NOT NULL, `peso` REAL NOT NULL, `notas` TEXT NOT NULL, `responsable` TEXT NOT NULL, `registradoEn` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "animalId",
+            "columnName": "animalId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "peso",
+            "columnName": "peso",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "responsable",
+            "columnName": "responsable",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "registradoEn",
+            "columnName": "registradoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pesajes_animalId",
+            "unique": false,
+            "columnNames": [
+              "animalId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pesajes_animalId` ON `${TABLE_NAME}` (`animalId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "eventos_animales",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `animalId` TEXT NOT NULL, `fecha` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `detalle` TEXT NOT NULL, `responsable` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "animalId",
+            "columnName": "animalId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detalle",
+            "columnName": "detalle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "responsable",
+            "columnName": "responsable",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_eventos_animales_animalId",
+            "unique": false,
+            "columnNames": [
+              "animalId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_eventos_animales_animalId` ON `${TABLE_NAME}` (`animalId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "partos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `madreId` TEXT NOT NULL, `gestacionId` INTEGER, `fecha` INTEGER NOT NULL, `resultado` TEXT NOT NULL, `notas` TEXT NOT NULL, `responsable` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "madreId",
+            "columnName": "madreId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gestacionId",
+            "columnName": "gestacionId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resultado",
+            "columnName": "resultado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "responsable",
+            "columnName": "responsable",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_partos_gestacionId",
+            "unique": true,
+            "columnNames": [
+              "gestacionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_partos_gestacionId` ON `${TABLE_NAME}` (`gestacionId`)"
+          },
+          {
+            "name": "index_partos_madreId",
+            "unique": false,
+            "columnNames": [
+              "madreId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_partos_madreId` ON `${TABLE_NAME}` (`madreId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "movimientos_existencias",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `productoId` TEXT NOT NULL, `clase` TEXT NOT NULL, `nombre` TEXT NOT NULL, `fecha` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `cantidad` REAL NOT NULL, `saldo` REAL NOT NULL, `unidad` TEXT NOT NULL, `motivo` TEXT NOT NULL, `responsable` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productoId",
+            "columnName": "productoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clase",
+            "columnName": "clase",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidad",
+            "columnName": "cantidad",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "saldo",
+            "columnName": "saldo",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unidad",
+            "columnName": "unidad",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "motivo",
+            "columnName": "motivo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "responsable",
+            "columnName": "responsable",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_movimientos_existencias_productoId",
+            "unique": false,
+            "columnNames": [
+              "productoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movimientos_existencias_productoId` ON `${TABLE_NAME}` (`productoId`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '805e8400d4ee0ff7cb30c0846f7b0d42')"
+    ]
+  }
+}

@@ -61,7 +61,7 @@ fun TarjetaMedicamento(
                 Text(
                     text = "Stock: ${medicamento.stock} ${medicamento.unidadMedida}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (medicamento.stock < 5) Color.Red else Color.Gray
+                    color = if (medicamento.stock <= medicamento.stockMinimo) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (medicamento.dosis.isNotBlank()) {
                     Text(

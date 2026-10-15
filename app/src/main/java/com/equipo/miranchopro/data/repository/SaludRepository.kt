@@ -14,7 +14,8 @@ class SaludRepository(
     private val medicamentoDao: MedicamentoDao,
     private val vacunacionDao: VacunacionDao,
     private val enfermedadDao: EnfermedadDao,
-    private val animalDao: com.equipo.miranchopro.data.local.dao.AnimalDao
+    private val animalDao: com.equipo.miranchopro.data.local.dao.AnimalDao,
+    private val responsable: () -> String = { "" }
 ) {
     fun obtenerAnimales() = animalDao.obtenerTodos()
     private suspend fun validarAnimal(id: String) {
@@ -30,14 +31,14 @@ class SaludRepository(
     suspend fun insertarMedicamento(medicamento: Medicamento) {
         validarMedicamento(medicamento)
         require(medicamentoDao.buscarPorNombre(medicamento.nombre)?.id.let { it==null || it==medicamento.id }) { "Este medicamento ya existe" }
-        medicamentoDao.guardarValidado(medicamento, true)
+        medicamentoDao.guardarValidado(medicamento, true, responsable())
     }
     suspend fun actualizarMedicamento(medicamento: Medicamento) {
         validarMedicamento(medicamento)
         require(medicamentoDao.buscarPorNombre(medicamento.nombre)?.id.let { it==null || it==medicamento.id }) { "Este medicamento ya existe" }
-        medicamentoDao.guardarValidado(medicamento, false)
+        medicamentoDao.guardarValidado(medicamento, false, responsable())
     }
-    suspend fun eliminarMedicamento(medicamento: Medicamento) = medicamentoDao.eliminar(medicamento)
+    suspend fun eliminarMedicamento(medicamento: Medicamento) = medicamentoDao.eliminarValidado(medicamento,responsable())
 
     // Vacunaciones
     fun obtenerVacunaciones(): Flow<List<Vacunacion>> = vacunacionDao.obtenerTodas()
@@ -48,13 +49,13 @@ class SaludRepository(
         require(reglas.errorFecha(vacunacion.fechaAplicacion,"La fecha")==null) { "Ingresa una fecha de aplicación válida" }
         val proxima=vacunacion.proximaDosis
         if (!proxima.isNullOrBlank()) require(reglas.errorFecha(proxima,"La próxima fecha",permitirFutura=true)==null && reglas.fecha(proxima)!!>=reglas.fecha(vacunacion.fechaAplicacion)!!) { "La próxima fecha debe ser válida y posterior a la aplicación" }
-        vacunacionDao.insertar(vacunacion)
+        vacunacionDao.registrarValidado(vacunacion)
     }
 
     // Enfermedades
     fun obtenerEnfermedades(): Flow<List<Enfermedad>> = enfermedadDao.obtenerTodas()
-    suspend fun registrarEnfermedad(enfermedad: Enfermedad) { validarEnfermedad(enfermedad); enfermedadDao.insertar(enfermedad) }
-    suspend fun actualizarEnfermedad(enfermedad: Enfermedad) { validarEnfermedad(enfermedad); enfermedadDao.actualizar(enfermedad) }
+    suspend fun registrarEnfermedad(enfermedad: Enfermedad) { validarEnfermedad(enfermedad); enfermedadDao.guardarValidado(enfermedad,true) }
+    suspend fun actualizarEnfermedad(enfermedad: Enfermedad) { validarEnfermedad(enfermedad); enfermedadDao.guardarValidado(enfermedad,false) }
     private suspend fun validarEnfermedad(e: Enfermedad) {
         validarAnimal(e.idAnimal)
         require(e.nombre.isNotBlank() && e.sintomas.isNotBlank()) { "Nombre y síntomas son obligatorios" }

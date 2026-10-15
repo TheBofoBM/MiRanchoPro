@@ -12,5 +12,6 @@ data class Insumo(
     val tipo: String, // e.g., "Alimento", "Forraje", "Minerales"
     val cantidad: Double,
     val unidadMedida: String, // e.g., "kg", "bultos", "ton"
-    val stockMinimo: Double = 10.0
+    val stockMinimo: Double = 10.0,
+    val fechaCaducidad: Long? = null
 )

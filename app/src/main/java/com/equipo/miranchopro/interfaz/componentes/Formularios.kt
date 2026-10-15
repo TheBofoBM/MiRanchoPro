@@ -17,11 +17,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.*
 import com.equipo.miranchopro.modelovista.OperacionViewModel
 
 @Composable
 fun MensajeFormulario(mensaje: String?) {
-    if (!mensaje.isNullOrBlank()) Text(mensaje, color = MaterialTheme.colorScheme.error, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), style = MaterialTheme.typography.bodyMedium)
+    if (!mensaje.isNullOrBlank()) Text(mensaje, color = MaterialTheme.colorScheme.error, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
 }
 
 @Composable
@@ -31,7 +33,14 @@ fun EstadoOperacion(viewModel: OperacionViewModel) {
 }
 
 @Composable
-fun FormularioDialogo(titulo: String, onDismiss: () -> Unit, guardando: Boolean = false, error: String? = null, contenido: @Composable ColumnScope.() -> Unit) {
+fun FormularioDialogo(titulo: String, onDismiss: () -> Unit, guardando: Boolean = false, error: String? = null, borradorId: String = "", operacion: OperacionViewModel? = LocalOperacionBorrador.current, contenido: @Composable ColumnScope.() -> Unit) {
+    val context=LocalContext.current
+    val clave="${LocalRutaBorrador.current}|$titulo|$borradorId|"
+    var intento by remember { mutableStateOf(false) }
+    val errorActual by rememberUpdatedState(error)
+    val versionInicial=remember(clave,operacion) { operacion?.versionGuardado ?: 0 }
+    LaunchedEffect(guardando) { if(guardando) intento=true }
+    DisposableEffect(clave,operacion) { onDispose { if((operacion!=null && operacion.versionGuardado>versionInicial) || (operacion==null && intento && errorActual==null)) Borradores.borrar(context,clave) } }
     Dialog(
         onDismissRequest = { if (!guardando) onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
@@ -52,7 +61,9 @@ fun FormularioDialogo(titulo: String, onDismiss: () -> Unit, guardando: Boolean 
                     }
                     if (guardando) LinearProgressIndicator(Modifier.fillMaxWidth())
                     MensajeFormulario(error)
-                    contenido()
+                    CompositionLocalProvider(LocalFormularioBorrador provides clave) { contenido() }
+                    Text("El borrador se conserva al cerrar este formulario.",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextButton(onClick={Borradores.borrar(context,clave);onDismiss()},enabled=!guardando) { Text("Descartar borrador") }
                 }
             }
         }
@@ -61,9 +72,12 @@ fun FormularioDialogo(titulo: String, onDismiss: () -> Unit, guardando: Boolean 
 
 @Composable
 fun CampoFormulario(etiqueta: String, valor: String, cambiar: (String) -> Unit, error: String? = null, ejemplo: String = "", teclado: KeyboardType = KeyboardType.Text, enabled: Boolean = true, transformacion: VisualTransformation = VisualTransformation.None, enfocar: Boolean = false) {
+    val context=LocalContext.current
+    val clave=LocalFormularioBorrador.current?.takeIf { transformacion==VisualTransformation.None && teclado!=KeyboardType.Password }?.plus(etiqueta)
+    LaunchedEffect(clave) { clave?.let { Borradores.leer(context,it)?.let(cambiar) } }
     val foco = remember { FocusRequester() }
     LaunchedEffect(enfocar, error) { if (enfocar && error != null) foco.requestFocus() }
-    OutlinedTextField(value = valor, onValueChange = cambiar, label = { Text(etiqueta) }, placeholder = { Text(ejemplo) },
+    OutlinedTextField(value = valor, onValueChange = { clave?.let { c -> Borradores.guardar(context,c,it) };cambiar(it) }, label = { Text(etiqueta) }, placeholder = { Text(ejemplo) },
         isError = error != null, supportingText = if (error != null) {{ Text(error) }} else null,
         modifier = Modifier.fillMaxWidth().focusRequester(foco), singleLine = true, enabled = enabled,
         keyboardOptions = KeyboardOptions(keyboardType = teclado), visualTransformation = transformacion)
@@ -72,13 +86,16 @@ fun CampoFormulario(etiqueta: String, valor: String, cambiar: (String) -> Unit, 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelectorFormulario(etiqueta: String, valor: String, opciones: List<String>, cambiar: (String) -> Unit, error: String? = null) {
+    val context=LocalContext.current
+    val clave=LocalFormularioBorrador.current?.plus(etiqueta)
+    LaunchedEffect(clave,opciones) { clave?.let { Borradores.leer(context,it)?.takeIf { v -> v in opciones }?.let(cambiar) } }
     var expandido by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expandido, onExpandedChange = { expandido = !expandido }) {
         OutlinedTextField(value = valor, onValueChange = {}, readOnly = true, label = { Text(etiqueta) }, isError = error != null,
             supportingText = if (error != null) {{ Text(error) }} else null,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandido) }, modifier = Modifier.menuAnchor().fillMaxWidth())
         ExposedDropdownMenu(expanded = expandido, onDismissRequest = { expandido = false }) {
-            opciones.forEach { opcion -> DropdownMenuItem(text = { Text(opcion) }, onClick = { cambiar(opcion); expandido = false }) }
+            opciones.forEach { opcion -> DropdownMenuItem(text = { Text(opcion) }, onClick = { clave?.let { Borradores.guardar(context,it,opcion) };cambiar(opcion); expandido = false }) }
         }
     }
 }

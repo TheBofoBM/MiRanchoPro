@@ -12,5 +12,7 @@ data class Medicamento(
     val dosis: String,
     val stock: Int,
     val unidadMedida: String, // e.g., ml, mg, unidades
-    val descripcion: String = ""
+    val descripcion: String = "",
+    @androidx.room.ColumnInfo(defaultValue = "5") val stockMinimo: Int = 5,
+    val fechaCaducidad: Long? = null
 )

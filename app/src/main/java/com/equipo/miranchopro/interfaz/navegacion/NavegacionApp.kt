@@ -66,8 +66,22 @@ import com.equipo.miranchopro.modelovista.*
 import com.equipo.miranchopro.utils.ShakeDetector
 import com.equipo.miranchopro.viewmodel.*
 import kotlinx.coroutines.launch
+import com.equipo.miranchopro.interfaz.componentes.LocalRutaBorrador
+import com.equipo.miranchopro.interfaz.componentes.ConBorradoresDe
+import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaFichaAnimal
+import com.equipo.miranchopro.interfaz.pantallas.inventario.PantallaGanado
+import com.equipo.miranchopro.interfaz.pantallas.reportes.PantallaEstadisticas
+import com.equipo.miranchopro.interfaz.pantallas.tareas.PantallaAgenda
+import com.equipo.miranchopro.interfaz.pantallas.insumos.PantallaMovimientos
+import com.equipo.miranchopro.interfaz.pantallas.configuracion.PantallaRespaldo
+import com.equipo.miranchopro.interfaz.pantallas.inicio.PantallaAyuda
 
 sealed class Pantalla(val ruta: String) {
+    object FichaAnimal : Pantalla("ficha_animal/{idArete}") { fun crearRuta(id: String)="ficha_animal/${Uri.encode(id)}" }
+    object Agenda : Pantalla("agenda")
+    object Movimientos : Pantalla("movimientos")
+    object Respaldo : Pantalla("respaldo")
+    object Ayuda : Pantalla("ayuda")
     object Login : Pantalla("login")
     object Registro : Pantalla("registro")
     object Inventario : Pantalla("inventario")
@@ -117,15 +131,16 @@ sealed class ItemNavegacion(
 }
 
 @Composable
-fun NavegacionApp() {
+fun NavegacionApp(abrirAgenda: Boolean = false,alAbrirAgenda: () -> Unit = {}) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     val database = remember { RanchoDatabase.getDatabase(context) }
-    val repoAnimales = remember { AnimalRepository(database.animalDao(), database.embarazoDao()) }
-    val repoLotes = remember { LoteRepository(database.loteDao()) }
-    val repoSalud = remember { SaludRepository(database.medicamentoDao(), database.vacunacionDao(), database.enfermedadDao(), database.animalDao()) }
+    val contextoApp=context.applicationContext
+    val repoAnimales = remember { AnimalRepository(database.animalDao(), database.embarazoDao()) { contextoApp.getSharedPreferences("sesion",Context.MODE_PRIVATE).getString("correo","") ?: "" } }
+    val repoLotes = remember { LoteRepository(database.loteDao()) { contextoApp.getSharedPreferences("sesion",Context.MODE_PRIVATE).getString("correo","") ?: "" } }
+    val repoSalud = remember { SaludRepository(database.medicamentoDao(), database.vacunacionDao(), database.enfermedadDao(), database.animalDao()) { contextoApp.getSharedPreferences("sesion",Context.MODE_PRIVATE).getString("correo","") ?: "" } }
     val repoTareas = remember { TareaRepository(database.tareaDao()) }
 
     val sesion: SesionViewModel = viewModel { SesionViewModel(context, database.usuarioDao()) }
@@ -139,12 +154,15 @@ fun NavegacionApp() {
         }
         return
     }
+    val panel: PanelRanchoViewModel = viewModel { PanelRanchoViewModel(database) { sesion.usuario.value?.correo ?: "" } }
     var mostrarRecuperacion by remember { mutableStateOf(false) }
     if(mostrarRecuperacion) AlertDialog(onDismissRequest={mostrarRecuperacion=false},title={Text("Recuperar acceso")},text={Text("Si eres empleado, pide al dueño que cambie tu contraseña desde Equipo. La recuperación por correo del dueño estará disponible cuando se active la cuenta en línea.")},confirmButton={TextButton(onClick={mostrarRecuperacion=false}){Text("Entendido")}})
 
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    LaunchedEffect(usuarioActual?.correo) { com.equipo.miranchopro.data.local.RecordatoriosRancho.programar(context) }
+    LaunchedEffect(abrirAgenda,usuarioActual?.correo) { if(abrirAgenda && usuarioActual!=null) { navController.navigate(Pantalla.Agenda.ruta){launchSingleTop=true};alAbrirAgenda() } }
 
     var mostrarShakeOverlay by remember { mutableStateOf(false) }
 
@@ -167,7 +185,7 @@ fun NavegacionApp() {
         onDispose { sensorManager.unregisterListener(shakeDetector) }
     }
 
-    val pantallasSinBarra = listOf(Pantalla.Login.ruta, Pantalla.Registro.ruta)
+    val pantallasSinBarra = listOf(Pantalla.Login.ruta, Pantalla.Registro.ruta, Pantalla.Respaldo.ruta)
     val mostrarBarra = usuarioActual!=null && currentDestination?.route !in (pantallasSinBarra + listOf(Pantalla.RegistrarAnimal.ruta,Pantalla.EditarAnimal.ruta,Pantalla.RegistrarLote.ruta))
     LaunchedEffect(currentDestination?.route, usuarioActual?.correo) {
         val ruta=currentDestination?.route
@@ -177,7 +195,8 @@ fun NavegacionApp() {
             navController.navigate(Pantalla.Inicio.ruta){popUpTo(Pantalla.Inicio.ruta)}
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF004D40)).statusBarsPadding()) {
+    CompositionLocalProvider(LocalRutaBorrador provides "${usuarioActual?.correo ?: "sin-sesion"}|${currentDestination?.route}|${navBackStackEntry?.arguments?.getString("idTemp") ?: navBackStackEntry?.arguments?.getString("idArete") ?: navBackStackEntry?.arguments?.getInt("idLote")?.toString() ?: ""}") {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
@@ -241,6 +260,7 @@ fun NavegacionApp() {
                         },
                         onRegisterClick = { navController.navigate(Pantalla.Registro.ruta) },
                         onForgotPassword = { mostrarRecuperacion = true },
+                        onRestaurarRespaldo = { navController.navigate(Pantalla.Respaldo.ruta) },
                         viewModel = loginViewModel
                     )
                 }
@@ -264,40 +284,39 @@ fun NavegacionApp() {
                         saludViewModel = saludViewModel,
                         usuarioActual = usuarioActual,
                         tareasViewModel = tarViewModel,
-                        climaViewModel = climaViewModel
+                        climaViewModel = climaViewModel,
+                        panelViewModel = panel
                     )
                 }
 
                 composable(Pantalla.Tareas.ruta) {
                     val tareasViewModel: TareasViewModel = viewModel { TareasViewModel(repoTareas, database.usuarioDao(), {sesion.usuario.value}) }
                     val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao(), { sesion.usuario.value?.rol?.equals("Administrador",true)==true }, {sesion.usuario.value?.correo ?: ""}) }
-                    PantallaTareas(
+                    ConBorradoresDe(tareasViewModel) { PantallaTareas(
                         navController = navController,
                         tareasViewModel = tareasViewModel,
                         trabajadoresViewModel = trabViewModel,
                         usuarioActual = usuarioActual
-                    )
+                    ) }
                 }
 
                 composable(Pantalla.Salud.ruta) {
                     val saludViewModel: SaludViewModel = viewModel { SaludViewModel(repoSalud) }
-                    PantallaSalud(navController = navController, viewModel = saludViewModel)
+                    ConBorradoresDe(saludViewModel) { PantallaSalud(navController = navController, viewModel = saludViewModel) }
                 }
 
                 composable(Pantalla.Reportes.ruta) {
-                    val useCase = GenerarReporteUseCase(repoAnimales)
-                    val reporteViewModel: ReporteViewModel = viewModel { ReporteViewModel(useCase) }
-                    PantallaReportes(navController = navController, viewModel = reporteViewModel)
+                    PantallaEstadisticas(navController,panel)
                 }
 
                 composable(Pantalla.Trabajadores.ruta) {
                     val trabViewModel: TrabajadoresViewModel = viewModel { TrabajadoresViewModel(database.usuarioDao(), { sesion.usuario.value?.rol?.equals("Administrador",true)==true }, {sesion.usuario.value?.correo ?: ""}) }
-                    PantallaTrabajadores(navController = navController, viewModel = trabViewModel)
+                    ConBorradoresDe(trabViewModel) { PantallaTrabajadores(navController = navController, viewModel = trabViewModel) }
                 }
 
                 composable(Pantalla.Insumos.ruta) {
-                    val insumoViewModel: InsumoViewModel = viewModel { InsumoViewModel(database.insumoDao()) }
-                    PantallaInsumos(navController = navController, viewModel = insumoViewModel)
+                    val insumoViewModel: InsumoViewModel = viewModel { InsumoViewModel(database.insumoDao()) { sesion.usuario.value?.correo ?: "" } }
+                    ConBorradoresDe(insumoViewModel) { PantallaInsumos(navController = navController, viewModel = insumoViewModel) }
                 }
 
                 composable(Pantalla.ClimaDetallado.ruta) {
@@ -306,12 +325,19 @@ fun NavegacionApp() {
                 }
 
                 composable(Pantalla.Inventario.ruta) {
-                    val invViewModel: InventarioViewModel = viewModel { InventarioViewModel(repoAnimales) }
-                    PantallaInventario(navController = navController, viewModel = invViewModel, alSeleccionarAnimal = { id ->
-                        val animal = invViewModel.listaAnimales.find { it.idArete == id }
-                        if (animal?.estado == "Pendiente") navController.navigate(Pantalla.RegistrarAnimal.crearRuta(idTemp = id))
-                        else navController.navigate(Pantalla.EditarAnimal.crearRuta(id))
-                    }, alAgregarAnimal = { tipo -> navController.navigate(Pantalla.RegistrarAnimal.crearRuta(tipo)) })
+                    PantallaGanado(navController,panel)
+                }
+                composable(Pantalla.Agenda.ruta) { PantallaAgenda(navController,panel,usuarioActual) }
+                composable(Pantalla.Movimientos.ruta) { PantallaMovimientos(navController,panel) }
+                composable(Pantalla.Ayuda.ruta) { PantallaAyuda(navController) }
+                composable(Pantalla.FichaAnimal.ruta,arguments=listOf(navArgument("idArete"){type=NavType.StringType})) { entrada ->
+                    PantallaFichaAnimal(entrada.arguments?.getString("idArete") ?: "",navController,panel)
+                }
+                composable(Pantalla.Respaldo.ruta) {
+                    val respaldo: RespaldoViewModel = viewModel { RespaldoViewModel(context,database) { sesion.usuario.value } }
+                    PantallaRespaldo(respaldo,usuarioActual?.rol?.equals("Administrador",true)==true,{navController.popBackStack()}) {
+                        sesion.salir();navController.navigate(Pantalla.Login.ruta){popUpTo(0){inclusive=true}}
+                    }
                 }
 
                 composable(Pantalla.Lotes.ruta) {
@@ -341,14 +367,14 @@ fun NavegacionApp() {
                     val animales = invViewModel.listaAnimales.filter { it.ubicacion == lote?.nombre && it.estado !in listOf("Baja","Pendiente") }
 
                     if (lote != null) {
-                        PantallaDetalleLote(
+                        ConBorradoresDe(lotesViewModel) { PantallaDetalleLote(
                             lote = lote,
                             animalesEnLote = animales,
                             todosLosLotes = lotesState,
                             viewModel = lotesViewModel,
                             onVolver = { navController.popBackStack() },
-                            onVerAnimal = { idArete -> navController.navigate(Pantalla.EditarAnimal.crearRuta(idArete)) }
-                        )
+                            onVerAnimal = { idArete -> navController.navigate(Pantalla.FichaAnimal.crearRuta(idArete)) }
+                        ) }
                     }
                 }
 
@@ -358,7 +384,7 @@ fun NavegacionApp() {
                 }
 
                 composable(Pantalla.Configuracion.ruta) {
-                    PantallaConfiguracion(navController = navController)
+                    PantallaConfiguracion(navController = navController,dueno=usuarioActual?.rol?.equals("Administrador",true)==true)
                 }
 
                 composable(
@@ -412,5 +438,6 @@ fun NavegacionApp() {
                 onDismiss = { mostrarShakeOverlay = false }
             )
         }
+    }
     }
 }

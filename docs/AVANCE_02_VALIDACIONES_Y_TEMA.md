@@ -2,6 +2,8 @@
 
 Fecha: 14 de octubre de 2026.
 
+Continuación: [historiales, respaldos, calendario y mejoras de uso](AVANCE_03_OPERACION_DEL_RANCHO.md). Los pendientes de este informe describen el estado anterior a ese bloque.
+
 Se implementaron las correcciones de formularios y consistencia descritas abajo, junto con la revisión del contraste en modo oscuro. El informe original se conserva como diagnóstico histórico en [REVISION_VALIDACIONES_Y_DISENO.md](REVISION_VALIDACIONES_Y_DISENO.md).
 
 ## Apariencia

@@ -4,7 +4,7 @@ Preparado el 14 de octubre de 2026 a partir de la revisión del código y de los
 
 Objetivo: publicar una aplicación Android útil y estable en Google Play, con una modalidad Gratis y una modalidad Pro para colaboración entre dispositivos, estadísticas y seguimiento del ganado.
 
-Este documento reúne el trabajo propuesto y su avance. El usuario autorizó comenzar la implementación el 14 de octubre de 2026. Las casillas marcadas corresponden a tareas implementadas y verificadas; las demás siguen pendientes. Los límites comerciales aún son propuestas. No es necesario completar todas las ampliaciones antes de la primera publicación.
+Este documento conserva la planificación original. El usuario autorizó comenzar la implementación el 14 de octubre de 2026. Las casillas no reflejan todos los avances posteriores: consulta [validaciones y tema](docs/AVANCE_02_VALIDACIONES_Y_TEMA.md) y [operación del rancho, respaldos e historiales](docs/AVANCE_03_OPERACION_DEL_RANCHO.md) para conocer el estado actual. Los límites comerciales aún son propuestas. No es necesario completar todas las ampliaciones antes de la primera publicación.
 
 ## Avance del primer bloque — 14 de octubre de 2026
 

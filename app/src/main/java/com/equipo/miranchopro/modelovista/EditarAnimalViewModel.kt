@@ -179,7 +179,7 @@ class EditarAnimalViewModel(
         if (motivoBaja !in listOf("Vendido", "Muerto", "Agregado accidentalmente")) { mensajeError = "Selecciona el motivo de baja"; return }
         ejecutar {
             val animal = repositorio.getAnimalById(idArete) ?: throw IllegalArgumentException("El animal ya no existe")
-            repositorio.actualizarSeguro(animal.copy(estado = "Baja", marcas = "${animal.marcas} | Baja: $motivoBaja"))
+            repositorio.actualizarSeguro(animal.copy(estado = "Baja", fechaBaja = System.currentTimeMillis(), motivoBaja = motivoBaja))
             mostrarDialogoBaja = false
             _eventoUI.emit(EventoUI.BajaExitosa)
         }
@@ -194,5 +194,13 @@ class EditarAnimalViewModel(
             catch (e: Exception) { mensajeError = Validaciones.mensaje(e); _eventoUI.emit(EventoUI.Error(mensajeError!!)) }
             finally { estaCargando = false }
         }
+    }
+    fun camposBorrador()=mapOf("nombre" to nombre,"tipo" to tipo,"raza" to raza,"nacimiento" to fechaNacimiento,"peso" to peso,"caracteristica" to caracteristica,"origen" to origen,"color" to color,"marcas" to marcas,"ubicacion" to ubicacion,"fotoUri" to (fotoUri?.toString() ?: ""),"fotoPath" to (fotoPath ?: ""),"fechaMonta" to fechaInseminacionSeleccionada,"tipoMonta" to tipoMating)
+    fun restaurarBorrador(d: Map<String,String>) {
+        nombre=d["nombre"] ?: nombre;tipo=d["tipo"] ?: tipo;raza=d["raza"] ?: raza
+        fechaNacimiento=d["nacimiento"] ?: fechaNacimiento;peso=d["peso"] ?: peso;caracteristica=d["caracteristica"] ?: caracteristica
+        origen=d["origen"] ?: origen;color=d["color"] ?: color;marcas=d["marcas"] ?: marcas;ubicacion=d["ubicacion"] ?: ubicacion
+        fotoUri=d["fotoUri"]?.takeIf { it.isNotBlank() }?.let(Uri::parse);fotoPath=d["fotoPath"]?.takeIf { it.isNotBlank() }
+        fechaInseminacionSeleccionada=d["fechaMonta"] ?: fechaInseminacionSeleccionada;tipoMating=d["tipoMonta"] ?: tipoMating
     }
 }

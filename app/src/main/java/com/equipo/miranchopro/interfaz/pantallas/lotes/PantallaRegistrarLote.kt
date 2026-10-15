@@ -49,6 +49,10 @@ fun PantallaRegistrarLote(
     var nombre by remember { mutableStateOf("") }
     var capacidadStr by remember { mutableStateOf("") }
     var mensajeError by remember { mutableStateOf("") }
+    val contexto=androidx.compose.ui.platform.LocalContext.current
+    val claveBorrador=com.equipo.miranchopro.interfaz.componentes.LocalRutaBorrador.current+"|nuevo-lote"
+    var terminado by remember { mutableStateOf(false) }
+    if(!terminado) com.equipo.miranchopro.interfaz.componentes.BorradorAnimal(claveBorrador,mapOf("nombre" to nombre,"capacidad" to capacidadStr)) { d -> nombre=d["nombre"] ?: nombre;capacidadStr=d["capacidad"] ?: capacidadStr }
 
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
@@ -181,7 +185,7 @@ fun PantallaRegistrarLote(
                             capacidadMaxima = capacidad,
                             ocupacionActual = 0
                         )
-                        viewModel.guardarNuevoLote(nuevoLote, onVolver)
+                        viewModel.guardarNuevoLote(nuevoLote) { terminado=true;com.equipo.miranchopro.interfaz.componentes.Borradores.borrar(contexto,claveBorrador);onVolver() }
                     }
                 },
                 modifier = Modifier

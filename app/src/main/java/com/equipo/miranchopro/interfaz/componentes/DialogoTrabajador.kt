@@ -17,7 +17,7 @@ fun DialogoTrabajador(trabajadorExistente: Usuario? = null, guardando: Boolean =
     var intento by rememberSaveable { mutableStateOf(false) }
     val errorCorreo = if(intento && !Validaciones.correoValido(correo)) "Ingresa un correo válido" else null
     val errorClave = if(intento && (trabajadorExistente==null || contrasena.isNotEmpty()) && contrasena.length<6) "Usa al menos 6 caracteres" else null
-    FormularioDialogo(if(trabajadorExistente==null) "Alta de empleado" else "Editar empleado",onDismiss,guardando,errorOperacion) {
+    FormularioDialogo(if(trabajadorExistente==null) "Alta de empleado" else "Editar empleado",onDismiss,guardando,errorOperacion,borradorId=trabajadorExistente?.correo ?: "nuevo") {
         CampoFormulario("Correo *",correo,{correo=it},errorCorreo,teclado=KeyboardType.Email,enabled=trabajadorExistente==null)
         CampoFormulario(if(trabajadorExistente==null) "Contraseña *" else "Nueva contraseña (opcional)",contrasena,{contrasena=it},errorClave,teclado=KeyboardType.Password,transformacion=PasswordVisualTransformation())
         if(trabajadorExistente!=null) Text("Deja la contraseña vacía para conservar la actual.")

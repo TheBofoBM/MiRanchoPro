@@ -36,11 +36,12 @@ fun DialogoAsignarTarea(tareaExistente: Tarea? = null, listaTrabajadores: List<S
     if(calendario) DatePickerDialog(onDismissRequest={calendario=false},confirmButton={TextButton(onClick={
         datePickerState.selectedDateMillis?.let { fecha=SimpleDateFormat("dd/MM/yyyy",Locale.ROOT).apply{timeZone=TimeZone.getTimeZone("UTC")}.format(Date(it)) };calendario=false
     }){Text("Seleccionar")}},dismissButton={TextButton(onClick={calendario=false}){Text("Cancelar")}}){ DatePicker(state=datePickerState) }
-    FormularioDialogo(if(tareaExistente==null) "Nueva tarea" else "Editar tarea",onDismiss,guardando,errorOperacion) {
+    FormularioDialogo(if(tareaExistente==null) "Nueva tarea" else "Editar tarea",onDismiss,guardando,errorOperacion,borradorId=tareaExistente?.id?.toString() ?: "nueva") {
         CampoFormulario("Título *",titulo,{titulo=it},if(intento && titulo.isBlank()) "Ingresa el título" else null)
         CampoFormulario("Descripción *",descripcion,{descripcion=it},if(intento && descripcion.isBlank()) "Describe la tarea" else null)
         SelectorFormulario("Responsable *",responsable,listaTrabajadores.distinct(),{responsable=it},if(intento && responsable !in listaTrabajadores) "Selecciona un responsable activo" else null)
         SelectorFormulario("Prioridad",prioridad.etiqueta,Prioridad.entries.map{it.etiqueta},{valor->prioridad=Prioridad.entries.first{it.etiqueta==valor}})
+        CampoFormulario("Fecha de tarea (opcional)",fecha,{fecha=it},ejemplo="dd/mm/aaaa")
         OutlinedButton(onClick={calendario=true},modifier=Modifier.fillMaxWidth()){Text(if(fecha.isBlank()) "Elegir fecha (opcional)" else "Fecha: $fecha")}
         if(fecha.isNotBlank()) TextButton(onClick={fecha=""}){Text("Quitar fecha")}
         Button(onClick={intento=true

@@ -51,7 +51,8 @@ fun LoginScreen(
     onLoginExitoso: (Usuario) -> Unit,
     onForgotPassword: () -> Unit,
     onRegisterClick: () -> Unit,
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel = viewModel(),
+    onRestaurarRespaldo: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
@@ -228,6 +229,7 @@ fun LoginScreen(
                         modifier = Modifier.clickable { onRegisterClick() }
                     )
                 }
+                TextButton(onClick=onRestaurarRespaldo,modifier=Modifier.fillMaxWidth()){Text("Recuperar datos de un respaldo")}
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }

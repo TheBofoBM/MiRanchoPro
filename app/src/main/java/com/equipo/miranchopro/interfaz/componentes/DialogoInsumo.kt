@@ -17,7 +17,7 @@ fun DialogoInsumo(insumoExistente: Insumo? = null, guardando: Boolean = false, e
     var cantidad by rememberSaveable { mutableStateOf(insumoExistente?.cantidad?.toString() ?: "") }
     var unidad by rememberSaveable { mutableStateOf(insumoExistente?.unidadMedida ?: "kg") }
     var intento by rememberSaveable { mutableStateOf(false) }
-    FormularioDialogo(if(insumoExistente==null) "Nuevo insumo" else "Editar insumo",onDismiss,guardando,errorOperacion) {
+    FormularioDialogo(if(insumoExistente==null) "Nuevo insumo" else "Editar insumo",onDismiss,guardando,errorOperacion,borradorId=insumoExistente?.id ?: "nuevo") {
         CampoFormulario("Nombre *",nombre,{nombre=it},if(intento && nombre.isBlank()) "Ingresa el nombre" else null)
         SelectorFormulario("Tipo",tipo,listOf("Alimento","Forraje","Suplemento","Otro"),{tipo=it})
         CampoFormulario("Cantidad *",cantidad,{cantidad=it},if(intento && Validaciones.decimal(cantidad)?.let{it>=0}!=true) "Ingresa una cantidad mayor o igual que cero" else null,teclado=KeyboardType.Decimal)

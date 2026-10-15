@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,15 +51,18 @@ fun PantallaRegistrarAnimal(
     alFinalizar: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val claveBorrador=LocalRutaBorrador.current+"|animal-alta"
+    var terminado by remember { mutableStateOf(false) }
+    if(!terminado && (!LocalRutaBorrador.current.contains("TEMP-") || viewModel.esEdicionPendiente)) BorradorAnimal(claveBorrador,viewModel.camposBorrador(),viewModel::restaurarBorrador)
     val snackbarHostState = remember { SnackbarHostState() }
     var expandedTipo by remember { mutableStateOf(false) }
     var mostrarDialogoOpcionesFoto by remember { mutableStateOf(false) }
     var mostrarConfirmacionCamara by remember { mutableStateOf(false) }
-    var tempUriCamara by remember { mutableStateOf<Uri?>(null) }
+    var tempUriCamara by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) viewModel.fotoUri = uri }
+    ) { uri -> if (uri != null) { runCatching { context.contentResolver.takePersistableUriPermission(uri,android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) };viewModel.fotoUri = uri } }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -72,6 +76,7 @@ fun PantallaRegistrarAnimal(
         viewModel.eventoUI.collectLatest { evento ->
             when (evento) {
                 is RegistrarAnimalViewModel.EventoUI.Exito -> {
+                    terminado=true;Borradores.borrar(context,claveBorrador)
                     snackbarHostState.showSnackbar(evento.mensaje)
                     alFinalizar()
                 }
@@ -142,7 +147,7 @@ fun PantallaRegistrarAnimal(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.confirmarFotoCamara()
+                        viewModel.fotoUri=tempUriCamara
                         mostrarConfirmacionCamara = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
@@ -170,6 +175,8 @@ fun PantallaRegistrarAnimal(
             Text("Identificación",style=MaterialTheme.typography.titleMedium)
             Text("Los campos con * son obligatorios. Puedes dejar el nacimiento vacío si lo desconoces.",style=MaterialTheme.typography.bodyMedium)
             MensajeFormulario(viewModel.mensajeError)
+            Text("El borrador se conserva en este teléfono al salir.",style=MaterialTheme.typography.bodySmall)
+            TextButton(onClick={terminado=true;Borradores.borrar(context,claveBorrador);viewModel.limpiarCampos();alFinalizar()},enabled=!viewModel.estaCargando){Text("Descartar borrador y salir")}
             CampoFormulario("Arete *",viewModel.idArete,{viewModel.idArete=it},viewModel.erroresCampos["arete"],"Ej. A-102",enfocar=viewModel.erroresCampos.keys.firstOrNull()=="arete")
             CampoFormulario("Nombre (opcional)",viewModel.nombre,{viewModel.nombre=it},ejemplo="Ej. Lucero")
             val hembra=viewModel.tipo in listOf("Vaca","Vaquilla","Becerra")

@@ -15,6 +15,6 @@ fun TemaMiRanchoPro(oscuro: Boolean=isSystemInDarkTheme(), colorDinamico: Boolea
     LaunchedEffect(Unit){PreferenciasApp.cargar(context)}
     val modo by PreferenciasApp.tema.collectAsState()
     val esOscuro=when(modo){"oscuro"->true;"claro"->false;else->oscuro}
-    SideEffect { (context as? Activity)?.window?.let { WindowCompat.getInsetsController(it,view).apply {isAppearanceLightStatusBars=false;isAppearanceLightNavigationBars=!esOscuro} } }
+    SideEffect { (context as? Activity)?.window?.let { WindowCompat.getInsetsController(it,view).apply {isAppearanceLightStatusBars=!esOscuro;isAppearanceLightNavigationBars=!esOscuro} } }
     MaterialTheme(colorScheme=if(esOscuro) Oscuro else Claro,typography=Tipografia,content=contenido)
 }

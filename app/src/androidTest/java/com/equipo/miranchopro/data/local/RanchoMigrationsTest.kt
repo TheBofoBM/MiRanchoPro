@@ -46,7 +46,7 @@ class RanchoMigrationsTest {
         assertEquals(1, migrated.enfermedadDao().obtenerTodas().first().size)
         assertEquals(1, migrated.tareaDao().obtenerTodas().first().size)
         assertTrue(migrated.embarazoDao().getHistorialEmbarazos("VACA-001").first().isEmpty())
-        assertEquals(12, migrated.openHelper.writableDatabase.version)
+        assertEquals(13, migrated.openHelper.writableDatabase.version)
     }
 
     @Test

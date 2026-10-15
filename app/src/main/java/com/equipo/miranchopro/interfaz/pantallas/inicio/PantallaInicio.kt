@@ -39,7 +39,8 @@ fun PantallaInicio(
     saludViewModel: SaludViewModel,
     usuarioActual: Usuario? = null,
     tareasViewModel: TareasViewModel = viewModel(),
-    climaViewModel: ClimaViewModel = viewModel()
+    climaViewModel: ClimaViewModel = viewModel(),
+    panelViewModel: com.equipo.miranchopro.modelovista.PanelRanchoViewModel
 ) {
     val totalAnimales = inventarioViewModel.listaAnimales.count {it.estado !in listOf("Baja","Pendiente")}
     val todasLasTareas by tareasViewModel.listaTareas.collectAsState()
@@ -53,7 +54,7 @@ fun PantallaInicio(
     val tareasPendientes = tareasFiltradas.count { !it.estaHecha }
 
     val medicamentos by saludViewModel.listaMedicamentos.collectAsState()
-    val medicamentosBajoStock = medicamentos.count { it.stock < 5 }
+    val medicamentosBajoStock = medicamentos.count { it.stock <= it.stockMinimo }
     var menuExpandido by remember { mutableStateOf(false) }
 
     val climaResponse by climaViewModel.climaState.collectAsState()
@@ -169,6 +170,9 @@ fun PantallaInicio(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
+                PrioridadesInicio(panelViewModel,usuarioActual,navController)
+            }
+            item {
                 Column(modifier = Modifier.padding(bottom = 4.dp)) {
                     Text(
                         text = "¡Hola, Bienvenido!",
@@ -205,10 +209,10 @@ fun PantallaInicio(
 
             if (medicamentosBajoStock > 0 && usuarioActual?.rol?.equals("Administrador", true) == true) {
                 item {
-                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))) {
+                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Warning, null, tint = Color.Red); Spacer(modifier = Modifier.width(12.dp))
-                            Text("$medicamentosBajoStock medicamentos con stock bajo", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.onErrorContainer); Spacer(modifier = Modifier.width(12.dp))
+                            Text("$medicamentosBajoStock medicamentos con stock bajo", color = MaterialTheme.colorScheme.onErrorContainer, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
@@ -220,14 +224,8 @@ fun PantallaInicio(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom
                 ) {
-                    Text("PRONÓSTICO DEL CLIMA (3 DÍAS)", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.5.sp)
-                    Text(
-                        "Ver más",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { navController.navigate(Pantalla.ClimaDetallado.ruta) }
-                    )
+                    Text("CLIMA · 3 DÍAS", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.weight(1f))
+                    TextButton(onClick={navController.navigate(Pantalla.ClimaDetallado.ruta)}) { Text("Ver más") }
                 }
             }
             item {

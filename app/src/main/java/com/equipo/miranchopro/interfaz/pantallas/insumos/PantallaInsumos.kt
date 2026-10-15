@@ -282,7 +282,7 @@ private fun DialogoCantidadInsumo(insumo: Insumo, sumar: Boolean, guardando: Boo
     var intento by remember { mutableStateOf(false) }
     val numero=Validaciones.decimal(cantidad)
     val error=if(intento && (numero==null || numero<=0)) "Ingresa una cantidad mayor que cero" else if(intento && !sumar && numero!=null && numero>insumo.cantidad) "No hay existencias suficientes" else null
-    FormularioDialogo(if(sumar) "Abastecer insumo" else "Registrar consumo",onDismiss,guardando,errorOperacion) {
+    FormularioDialogo(if(sumar) "Abastecer insumo" else "Registrar consumo",onDismiss,guardando,errorOperacion,borradorId=insumo.id) {
         Text("${insumo.nombre}: ${insumo.cantidad} ${insumo.unidadMedida} disponibles")
         CampoFormulario("Cantidad en ${insumo.unidadMedida} *",cantidad,{cantidad=it},error,teclado=androidx.compose.ui.text.input.KeyboardType.Decimal)
         Button(onClick={intento=true; if(numero!=null && numero>0 && (sumar || numero<=insumo.cantidad)) onConfirm(numero)},enabled=!guardando,modifier=Modifier.fillMaxWidth()){Text(if(sumar) "Abastecer" else "Descontar")}

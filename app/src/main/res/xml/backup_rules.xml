@@ -6,8 +6,6 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- Los datos y fotos viajan mediante el respaldo portable cifrado de la aplicación. -->
+    <include domain="sharedpref" path="preferencias.xml" />
 </full-backup-content>

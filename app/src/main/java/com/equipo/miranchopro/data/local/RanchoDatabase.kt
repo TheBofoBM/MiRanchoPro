@@ -18,9 +18,10 @@ import com.equipo.miranchopro.data.model.*
         Vacunacion::class, 
         Enfermedad::class,
         Tarea::class,
-        Embarazo::class
+        Embarazo::class,
+        Pesaje::class, EventoAnimal::class, Parto::class, MovimientoExistencia::class
     ], 
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -35,6 +36,7 @@ abstract class RanchoDatabase : RoomDatabase() {
     abstract fun enfermedadDao(): EnfermedadDao
     abstract fun tareaDao(): TareaDao
     abstract fun embarazoDao(): EmbarazoDao
+    abstract fun historialDao(): HistorialDao
 
     companion object {
         @Volatile

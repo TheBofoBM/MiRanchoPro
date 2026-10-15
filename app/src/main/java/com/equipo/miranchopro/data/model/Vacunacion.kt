@@ -13,5 +13,6 @@ data class Vacunacion(
     val fechaAplicacion: String,
     val idAnimal: String, // Arete del animal
     val proximaDosis: String? = null,
-    val notas: String = ""
+    val notas: String = "",
+    @androidx.room.ColumnInfo(defaultValue = "0") val recordatorioCompletado: Boolean = false
 )

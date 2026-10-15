@@ -12,7 +12,8 @@ import com.equipo.miranchopro.utils.Validaciones
 
 class AnimalRepository(
     private val animalDao: AnimalDao,
-    private val embarazoDao: EmbarazoDao
+    private val embarazoDao: EmbarazoDao,
+    private val responsable: () -> String = { "" }
 ) {
 
     fun obtenerTodos(): Flow<List<Animal>> = animalDao.obtenerTodos()
@@ -22,7 +23,7 @@ class AnimalRepository(
     suspend fun registrarAnimal(animal: Animal): Result<Boolean> {
         return try {
             validarAnimal(animal)
-            animalDao.insertarValidado(animal)
+            animalDao.insertarValidado(animal,responsable())
             Result.success(true)
         } catch (e: Exception) {
             Result.failure(e)
@@ -32,7 +33,7 @@ class AnimalRepository(
     suspend fun completarNacimientoPendiente(idTemporal: String, animal: Animal): Result<Boolean> {
         return try {
             validarAnimal(animal)
-            animalDao.completarNacimientoPendiente(idTemporal, animal)
+            animalDao.completarNacimientoPendiente(idTemporal, animal,responsable())
             Result.success(true)
         } catch (e: CancellationException) {
             throw e
@@ -66,7 +67,7 @@ class AnimalRepository(
     suspend fun updateAnimal(animal: Animal): Boolean {
         return try {
             validarAnimal(animal)
-            animalDao.actualizarValidado(animal)
+            animalDao.actualizarValidado(animal,responsable())
             true
         } catch (e: Exception) {
             false
@@ -112,12 +113,12 @@ class AnimalRepository(
 
     suspend fun actualizarSeguro(animal: Animal) {
         validarAnimal(animal)
-        animalDao.actualizarValidado(animal)
+        animalDao.actualizarValidado(animal,responsable())
     }
 
     suspend fun cerrarGestacion(id: String, estado: String) {
         require(estado in listOf("Finalizado", "Interrumpido")) { "Estado de gestación inválido" }
-        require(embarazoDao.cerrarActivos(id, estado) > 0) { "No hay una gestación activa" }
+        embarazoDao.cerrarValidado(id,estado,responsable())
     }
 
     private fun validarAnimal(animal: Animal) {

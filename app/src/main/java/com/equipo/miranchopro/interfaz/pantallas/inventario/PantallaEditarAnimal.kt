@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,14 +50,17 @@ fun PantallaEditarAnimal(
     alVolver: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val claveBorrador=LocalRutaBorrador.current+"|editar|$idArete"
+    var terminado by remember { mutableStateOf(false) }
+    if(!terminado && viewModel.idArete==idArete) BorradorAnimal(claveBorrador,viewModel.camposBorrador(),viewModel::restaurarBorrador)
     val snackbarHostState = remember { SnackbarHostState() }
     var mostrarDialogoOpcionesFoto by remember { mutableStateOf(false) }
     var mostrarConfirmacionCamara by remember { mutableStateOf(false) }
-    var tempUriCamara by remember { mutableStateOf<Uri?>(null) }
+    var tempUriCamara by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) viewModel.fotoUri = uri }
+    ) { uri -> if (uri != null) { runCatching { context.contentResolver.takePersistableUriPermission(uri,android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) };viewModel.fotoUri = uri } }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -74,10 +78,12 @@ fun PantallaEditarAnimal(
         viewModel.eventoUI.collectLatest { evento ->
             when (evento) {
                 is EditarAnimalViewModel.EventoUI.Exito -> {
+                    terminado=true;Borradores.borrar(context,claveBorrador)
                     snackbarHostState.showSnackbar("Animal actualizado correctamente")
                     alVolver()
                 }
                 is EditarAnimalViewModel.EventoUI.BajaExitosa -> {
+                    terminado=true;Borradores.borrar(context,claveBorrador)
                     snackbarHostState.showSnackbar("Animal dado de baja")
                     alVolver()
                 }
@@ -283,9 +289,9 @@ fun PantallaEditarAnimal(
                         Text(
                             text = "Fecha estimada a partir de la monta o inseminación; el nacimiento puede ocurrir antes o después.",
                             fontSize = 12.sp,
-                            color = Color.DarkGray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        TextButton(onClick={viewModel.cerrarGestacion("Finalizado")},enabled=!viewModel.estaCargando){Text("Marcar gestación finalizada")}
+                        Text("Registra el parto y sus crías desde la ficha del animal para finalizar esta gestación.",color=MaterialTheme.colorScheme.onSurfaceVariant)
                         TextButton(onClick={viewModel.cerrarGestacion("Interrumpido")},enabled=!viewModel.estaCargando){Text("Marcar gestación interrumpida")}
                     } else {
                         Button(
@@ -340,6 +346,8 @@ fun PantallaEditarAnimal(
             }
 
             MensajeFormulario(viewModel.mensajeError)
+            Text("El borrador se conserva en este teléfono al salir.",style=MaterialTheme.typography.bodySmall)
+            TextButton(onClick={terminado=true;Borradores.borrar(context,claveBorrador);alVolver()},enabled=!viewModel.estaCargando){Text("Descartar cambios y salir")}
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(

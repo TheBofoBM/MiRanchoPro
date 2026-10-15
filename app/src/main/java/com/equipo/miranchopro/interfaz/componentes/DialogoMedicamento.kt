@@ -21,7 +21,7 @@ fun DialogoMedicamento(medicamentoExistente: Medicamento? = null, validarNombre:
     val errorNombre = if (!intento) null else if (nombre.isBlank()) "Ingresa el nombre" else if (validarNombre(nombre, medicamentoExistente?.id)) "Este medicamento ya existe" else null
     val errorStock = if (intento && stock.toIntOrNull()?.let { it >= 0 } != true) "Ingresa un entero de 0 a 2147483647" else null
     val errorUnidad = if (intento && unidad.isBlank()) "Indica la unidad de existencias" else null
-    FormularioDialogo(if(medicamentoExistente==null) "Nuevo medicamento" else "Editar medicamento", onDismiss, guardando, errorOperacion) {
+    FormularioDialogo(if(medicamentoExistente==null) "Nuevo medicamento" else "Editar medicamento", onDismiss, guardando, errorOperacion,borradorId=medicamentoExistente?.id ?: "nuevo") {
         CampoFormulario("Nombre *",nombre,{nombre=it},errorNombre)
         CampoFormulario("Dosis indicada (opcional)",dosis,{dosis=it})
         CampoFormulario("Existencias *",stock,{stock=it},errorStock,teclado=KeyboardType.Number)
@@ -29,7 +29,7 @@ fun DialogoMedicamento(medicamentoExistente: Medicamento? = null, validarNombre:
         CampoFormulario("Notas (opcional)",notas,{notas=it})
         Button(onClick={ intento=true
             if(nombre.isNotBlank() && !validarNombre(nombre,medicamentoExistente?.id) && stock.toIntOrNull()?.let{it>=0}==true && unidad.isNotBlank())
-                onConfirm(Medicamento(id=medicamentoExistente?.id ?: java.util.UUID.randomUUID().toString(),nombre=nombre.trim(),dosis=dosis.trim(),stock=stock.toInt(),unidadMedida=unidad.trim(),descripcion=notas.trim()))
+                onConfirm(Medicamento(id=medicamentoExistente?.id ?: java.util.UUID.randomUUID().toString(),nombre=nombre.trim(),dosis=dosis.trim(),stock=stock.toInt(),unidadMedida=unidad.trim(),descripcion=notas.trim(),stockMinimo=medicamentoExistente?.stockMinimo ?: 5,fechaCaducidad=medicamentoExistente?.fechaCaducidad))
         },enabled=!guardando,modifier=Modifier.fillMaxWidth()){Text("Guardar")}
     }
 }

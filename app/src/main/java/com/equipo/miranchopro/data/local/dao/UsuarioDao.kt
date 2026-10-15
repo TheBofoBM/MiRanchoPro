@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UsuarioDao {
+    @Query("SELECT COUNT(*) FROM usuarios") suspend fun cantidad(): Int
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun registrarUsuario(usuario: Usuario)
 

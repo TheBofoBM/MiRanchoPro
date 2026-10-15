@@ -221,4 +221,11 @@ class RegistrarAnimalViewModel(
         fotoUri = null; fotoPath = null
         tempCameraUri = null
     }
+    fun camposBorrador()=mapOf("arete" to idArete,"nombre" to nombre,"tipo" to tipo,"raza" to raza,"nacimiento" to fechaNacimiento,"peso" to peso,"caracteristica" to caracteristica,"origen" to origen,"color" to color,"marcas" to marcas,"ubicacion" to ubicacion,"fotoUri" to (fotoUri?.toString() ?: ""),"fotoPath" to (fotoPath ?: ""))
+    fun restaurarBorrador(d: Map<String,String>) {
+        idArete=d["arete"] ?: idArete;nombre=d["nombre"] ?: nombre;tipo=d["tipo"] ?: tipo;raza=d["raza"] ?: raza
+        fechaNacimiento=d["nacimiento"] ?: fechaNacimiento;peso=d["peso"] ?: peso;caracteristica=d["caracteristica"] ?: caracteristica
+        origen=d["origen"] ?: origen;color=d["color"] ?: color;marcas=d["marcas"] ?: marcas;ubicacion=d["ubicacion"] ?: ubicacion
+        fotoUri=d["fotoUri"]?.takeIf { it.isNotBlank() }?.let(Uri::parse);fotoPath=d["fotoPath"]?.takeIf { it.isNotBlank() }
+    }
 }

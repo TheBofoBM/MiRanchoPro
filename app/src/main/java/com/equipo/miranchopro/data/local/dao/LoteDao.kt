@@ -37,6 +37,8 @@ interface LoteDao {
     suspend fun renombrarUbicacion(origen: String, destino: String)
     @Query("UPDATE animales SET ubicacion = :destino WHERE ubicacion = :origen AND estado NOT IN ('Baja','Pendiente')")
     suspend fun trasladarAnimales(origen: String, destino: String)
+    @Query("INSERT INTO eventos_animales (id, animalId, fecha, tipo, detalle, responsable) SELECT lower(hex(randomblob(16))), idArete, :fecha, 'Traslado', :detalle, :responsable FROM animales WHERE ubicacion = :origen AND estado NOT IN ('Baja','Pendiente')")
+    suspend fun registrarTraslado(origen: String, detalle: String, fecha: Long, responsable: String)
 
     @Transaction
     suspend fun guardarValidado(lote: Lote) {
@@ -51,13 +53,14 @@ interface LoteDao {
     }
 
     @Transaction
-    suspend fun moverValidado(origenId: Int, destinoId: Int) {
+    suspend fun moverValidado(origenId: Int, destinoId: Int, responsable: String = "") {
         require(origenId != destinoId) { "Selecciona un lote diferente" }
         val origen = porId(origenId) ?: throw IllegalArgumentException("El lote de origen ya no existe")
         val destino = porId(destinoId) ?: throw IllegalArgumentException("El lote de destino ya no existe")
         val cantidad = ocupacionReal(origen.nombre)
         require(cantidad > 0) { "El lote de origen está vacío" }
         require(cantidad.toLong() + ocupacionReal(destino.nombre) <= destino.capacidadMaxima.toLong()) { "El destino no tiene capacidad suficiente" }
+        registrarTraslado(origen.nombre,"${origen.nombre} → ${destino.nombre}",System.currentTimeMillis(),responsable)
         trasladarAnimales(origen.nombre, destino.nombre)
     }
 

@@ -19,12 +19,15 @@ fun PantallaMas(nav: NavController, usuario: Usuario?) {
         LazyColumn(Modifier.fillMaxSize().padding(padding),contentPadding=PaddingValues(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             item { Text("Mi Rancho PRO",style=MaterialTheme.typography.headlineSmall) }
             item { Text(usuario?.correo ?: "",style=MaterialTheme.typography.bodyMedium) }
+            item { Acceso("Calendario","Tareas, salud y partos próximos",Icons.Default.CalendarMonth){nav.navigate(Pantalla.Agenda.ruta)} }
             if(usuario?.rol?.equals("Administrador",true)==true) {
                 item { Acceso("Reportes","Resumen de animales activos",Icons.Default.Assessment){nav.navigate(Pantalla.Reportes.ruta)} }
                 item { Acceso("Equipo","Administrar empleados",Icons.Default.People){nav.navigate(Pantalla.Trabajadores.ruta)} }
                 item { Acceso("Lotes","Capacidad y movimientos",Icons.Default.Fence){nav.navigate(Pantalla.Lotes.ruta)} }
             }
             item { Acceso("Insumos","Existencias y consumo",Icons.Default.Inventory2){nav.navigate(Pantalla.Insumos.ruta)} }
+            item { Acceso("Movimientos","Historial, mínimos y caducidad",Icons.Default.History){nav.navigate(Pantalla.Movimientos.ruta)} }
+            item { Acceso("Guía de uso","Primeros pasos en el rancho",Icons.Default.HelpOutline){nav.navigate(Pantalla.Ayuda.ruta)} }
             item { Acceso("Mi perfil","Cuenta y contraseña",Icons.Default.Person){nav.navigate(Pantalla.Perfil.ruta)} }
             item { Acceso("Configuración","Apariencia e información",Icons.Default.Settings){nav.navigate(Pantalla.Configuracion.ruta)} }
             item { OutlinedButton(onClick={nav.navigate(Pantalla.Login.ruta){popUpTo(0){inclusive=true}}},modifier=Modifier.fillMaxWidth()){Text("Cerrar sesión")} }
